@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import crdb
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -18,7 +19,7 @@ project = 'CRDB'
 year = '2023'
 author = 'Hans Dembinski'
 copyright = '{0}, {1}'.format(year, author)
-version = release = '0.0.0'
+version = release = crdb.__version__
 
 pygments_style = 'trac'
 templates_path = ['.']

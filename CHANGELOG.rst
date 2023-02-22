@@ -2,7 +2,4 @@
 Changelog
 =========
 
-0.0.0 (2023-02-22)
-------------------
-
-* First release on PyPI.
+See `Github releases <https://github.com/crdb-project/crdb/releases>`_.

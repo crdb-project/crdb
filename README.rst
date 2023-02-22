@@ -51,9 +51,7 @@ Overview
 
 .. end-badges
 
-CRDB Python frontend
-
-* Free software: MIT license
+|CRDB| Python frontend
 
 Installation
 ============
@@ -70,30 +68,7 @@ You can also install the in-development version with::
 Documentation
 =============
 
+https://lpsc.in2p3.fr/crdb/
 
-https://crdb.readthedocs.io/
-
-
-Development
-===========
-
-To run all the tests run::
-
-    tox
-
-Note, to combine the coverage data from all the tox environments run:
-
-.. list-table::
-    :widths: 10 90
-    :stub-columns: 1
-
-    - - Windows
-      - ::
-
-            set PYTEST_ADDOPTS=--cov-append
-            tox
-
-    - - Other
-      - ::
-
-            PYTEST_ADDOPTS=--cov-append tox
+.. |CRDB| image:: https://lpsc.in2p3.fr/crdb/img/crdb_logo.svg
+    :target: https://lpsc.in2p3.fr/crdb

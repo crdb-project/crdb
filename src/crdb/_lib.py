@@ -299,7 +299,7 @@ def query(
     timeout: int = 120,
     server_url: str = "http://lpsc.in2p3.fr/crdb",
 ):
-    f"""
+    """
     Query CRDB and return table as a numpy array.
 
     See http://lpsc.in2p3.fr/crdb for documentation which parameters are accepted.
@@ -308,6 +308,7 @@ def query(
     ----------
     quantity: str
         Element, isotope, particle, or mass group, or ratio of those, e.g. 'H', 'B/C'.
+        For valid names, see the constant crdb.VALID_NAMES.
     energy_type: str, optional
         Energy unit for the requested quantity. Default is R.
         Valid values: EKN, EK, R, ETOT, ETOTN.
@@ -317,15 +318,15 @@ def query(
         compute B/C from native B and C). Three levels of combos are enabled: 0 (native
         data only, no combo), 1 (exact combos), or 2 (exact and approximate combos): in
         level 1, the mean energy (or energy bin) of the two quantities must be within 5%,
-        whereas for level 2, it must be within 20%
+        whereas for level 2, it must be within 20%.
     energy_convert_level: int, optional
         One of 0, 1, 2. Default is 1. Add data obtained from an exact or approximate
         energy_type conversion (from native to queried). Three levels of conversion are
         enabled: 0 (native data only, no conversion), 1 (exact conversion only, which
         applies to isotopic and leptonic fluxes), and 2 (exact and approximate
         conversions, the later applying to flux of elements and of groups of elements).
-    flux_scaling: float, optional
-        Flux is multiplied by E^flux_scaling.
+    flux_rescaling: float, optional
+        Flux is multiplied by E^flux_rescaling.
     exp_dates: str, optional
         Comma-separated list (optional time intervals) of sub-experiment names.
     energy_start: float, optional
@@ -333,35 +334,34 @@ def query(
     energy_stop: float, optional
         Upper limit for energy_type.
     time_start: str, optional
-        Lower limit for interval selection 	YYYY[/MM] (2014, 2010/06).
+        Lower limit for interval selection. Format: YYYY[/MM] (2014, 2010/06).
     time_stop: str, optional
-        Upper limit for interval selection 	YYYY[/MM] (2020, 2019/06).
+        Upper limit for interval selection. Format: YYYY[/MM] (2020, 2019/06).
     time_series: str, optional
         Whether to discard, select only, or keep time series data in query CRDB keywords
         ('no', 'only', 'all'). Default is 'no'.
     format: str, optional
         Output format, one of 'csv', 'usine', 'galprop'. Default is 'csv'.
     modulation: str, optional
-        Source of Solar modulation values, one of 'USO05', 'USO17', 'GHE17'. Default is
+        Source of Solar modulation values; one of 'USO05', 'USO17', 'GHE17'. Default is
         'GHE17'.
     timeout: int, optional
         Timeout for server response in seconds. Default is 60.
     server_url: str, optional
-        URL to send the request to, default is http://lpsc.in2p3.fr/crdb). This is an
+        URL to send the request to. Default is http://lpsc.in2p3.fr/crdb). This is an
         expert option, users do not need to change this.
-
-    Notes
-    -----
-    Valid names for `quantity` are {VALID_NAMES}.
 
     Returns
     -------
+
     numpy record array with the database content
 
     Raises
     ------
+
     ValueError
         An invalid parameter value triggers a ValueError.
+
     TimeoutError
         If the server does not respond within the timeout time.
 

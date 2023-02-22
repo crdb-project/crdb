@@ -45,7 +45,6 @@ documentation = 'https://lpsc.in2p3.fr/crdb'
 [project.scripts]
 crdb = "crdb.cli:main"
 
-
 [project.optional-dependencies]
 test = [
     "pytest",
@@ -73,7 +72,7 @@ skip-string-normalization = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--strict-config --strict-markers -q -ra --ff"
+addopts = "--strict-config --strict-markers --doctest-modules -q -ra --ff --tb=short"
 testpaths = ["tests"]
 log_cli_level = "INFO"
 xfail_strict = true

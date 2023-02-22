@@ -4,11 +4,9 @@ graft ci
 graft tests
 
 include .coveragerc
-include .editorconfig
 include .github/workflows/github-actions.yml
 include .pre-commit-config.yaml
 include .readthedocs.yml
-include pytest.ini
 
 include AUTHORS.rst
 include CHANGELOG.rst

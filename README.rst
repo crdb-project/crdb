@@ -1,6 +1,6 @@
-========
-Overview
-========
+======================
+|CRDB| Python frontend
+======================
 
 .. start-badges
 
@@ -51,7 +51,6 @@ Overview
 
 .. end-badges
 
-|CRDB| Python frontend
 
 Installation
 ============

@@ -54,8 +54,5 @@ You can install the in-development version with::
     pip install https://github.com/crdb-project/crdb/archive/main.zip
 
 
-Documentation
-=============
-
 .. |CRDB| image:: https://lpsc.in2p3.fr/crdb/img/crdb_logo.svg
     :target: https://lpsc.in2p3.fr/crdb

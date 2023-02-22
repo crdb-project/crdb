@@ -1,17 +1,10 @@
-========
-Contents
-========
+.. include:: ../README.rst
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   readme
-   reference/index
+   reference
    contributing
    authors
    changelog
-
-Indices and tables
-==================
-
-* :ref:`genindex`

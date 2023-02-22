@@ -280,7 +280,6 @@ VALID_NAMES = (
     "Zgeq70",
     "9Be+10Be",
 )
-VALID_NAMES.__doc__ = """Valid names for quantity"""
 
 
 def query(

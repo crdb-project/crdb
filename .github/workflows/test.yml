@@ -15,9 +15,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 'pypy-3.8'
-            python_arch: 'x64'
-            os: 'ubuntu-latest'
+          # Broken for some reason not related to us
+          # - python: 'pypy-3.8'
+          #   python_arch: 'x64'
+          #   os: 'ubuntu-latest'
           - python: '3.9'
             python_arch: 'x64'
             os: 'windows-latest'

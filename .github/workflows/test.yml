@@ -1,8 +1,14 @@
-name: build
+name: Test
+
 on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.py }} ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:

@@ -48,7 +48,6 @@
     :target: https://github.com/crdb-project/crdb/compare/v0.0.0...main
 
 
-
 .. end-badges
 
 

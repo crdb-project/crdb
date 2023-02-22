@@ -1,26 +1,26 @@
 """
-Module that contains the command line app.
-
-Why does this file exist, and why not put this in __main__?
-
-  You might be tempted to import things from __main__ later, but that will cause
-  problems: the code will get executed twice:
-
-  - When you run `python -mcrdb` python will execute
-    ``__main__.py`` as a script. That means there won't be any
-    ``crdb.__main__`` in ``sys.modules``.
-  - When you import __main__ it will get executed again (as a module) because
-    there's no ``crdb.__main__`` in ``sys.modules``.
-
-  Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
+Command line interface for CRDB.
 """
 import argparse
+from crdb._lib import _url, _server_request
+import inspect
 
-parser = argparse.ArgumentParser(description='Command description.')
-parser.add_argument('names', metavar='NAME', nargs=argparse.ZERO_OR_MORE,
-                    help="A name of something.")
+parser = argparse.ArgumentParser(description=__doc__)
+
+for name, par in inspect.signature(_url).parameters.items():
+    if par.default is inspect.Parameter.empty:
+        parser.add_argument(name, type=par.annotation)
+    else:
+        parser.add_argument(f"--{name}", type=par.annotation, default=par.default)
+
+parser.add_argument("--timeout", type=int, default=120)
 
 
 def main(args=None):
     args = parser.parse_args(args=args)
-    print(args.names)
+    kwargs = vars(args)
+    timeout = kwargs['timeout']
+    del kwargs["timeout"]
+    url = _url(**kwargs)
+    data = _server_request(url, timeout=timeout)
+    print("\n".join(data))

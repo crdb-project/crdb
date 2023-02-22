@@ -1,10 +1,96 @@
 [build-system]
 requires = [
-    "setuptools>=30.3.0",
+    "setuptools>=61.0",
+    "setuptools_scm[toml]>=6.2",
     "wheel",
 ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crdb"
+description = "CRDB Python frontend"
+maintainers = [
+    { name = "Hans Dembinski" },
+    { email = "hans.dembinski@gmail.com" }
+]
+readme = "README.rst"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+classifiers = [
+    # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: Unix',
+    'Operating System :: POSIX',
+    'Operating System :: Microsoft :: Windows',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: Implementation :: PyPy',
+    'Topic :: Utilities',
+]
+dependencies = ["numpy", "cachier"]
+dynamic = ["version"]
+
+[project.urls]
+repository = 'https://github.com/crdb-project/crdb'
+documentation = 'https://lpsc.in2p3.fr/crdb'
+
+[project.scripts]
+crdb = "crdb.cli:main"
+
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "particle",
+    "matplotlib"
+]
+doc = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "nbsphinx",
+    "ipython",
+    "ipykernel",
+]
+
+[tool.setuptools_scm]
+
+[tool.mypy]
+strict = true
+no_implicit_optional = false
+allow_redefinition = true
+ignore_missing_imports = true
+show_error_codes = true
 
 [tool.black]
-line-length = 140
-target-version = ['py37']
+line-length = 90
+target-version = ['py38']
 skip-string-normalization = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--strict-config --strict-markers -q -ra --ff"
+testpaths = ["tests"]
+log_cli_level = "INFO"
+xfail_strict = true
+filterwarnings = [
+    "error::DeprecationWarning",
+    "error::numpy.VisibleDeprecationWarning",
+]
+
+[tool.coverage.run]
+relative_files = true
+source = ["pyhepmc"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover"]
+
+[tool.pydocstyle]
+convention = "numpy"

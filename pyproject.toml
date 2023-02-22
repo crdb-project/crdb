@@ -49,13 +49,10 @@ crdb = "crdb.cli:main"
 [project.optional-dependencies]
 test = [
     "pytest",
-    "particle",
-    "matplotlib"
 ]
 doc = [
     "sphinx",
     "sphinx-rtd-theme",
-    "nbsphinx",
     "ipython",
     "ipykernel",
 ]

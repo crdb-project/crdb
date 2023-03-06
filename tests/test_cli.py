@@ -1,6 +1,5 @@
 from crdb.cli import main
 import crdb
-import re
 
 
 def test_main():
@@ -13,6 +12,4 @@ def test_version(capsys):
     except SystemExit:
         pass
     c = capsys.readouterr()
-    m = re.match(r"crdb-([0-9]+\.[0-9]+\.[0-9]+)", c.out)
-    assert m
-    assert m.group(1) == crdb.__version__
+    assert c.out == f"crdb-{crdb.__version__}\n"

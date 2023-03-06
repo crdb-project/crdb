@@ -1,8 +1,10 @@
+from __future__ import annotations
 import urllib.request as rq
 import numpy as np
 import warnings
 import cachier
 import datetime
+from typing import Union, Sequence
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (
@@ -283,7 +285,7 @@ VALID_NAMES = (
 
 
 def query(
-    quantity: str,
+    quantity: Union[str, Sequence[str]],
     energy_type: str = "R",
     combo_level: int = 1,
     energy_convert_level: int = 1,
@@ -306,9 +308,11 @@ def query(
 
     Parameters
     ----------
-    quantity: str
+    quantity: str or sequence of str
         Element, isotope, particle, or mass group, or ratio of those, e.g. 'H', 'B/C'.
-        For valid names, see the constant crdb.VALID_NAMES.
+        For valid names, see the constant crdb.VALID_NAMES. Multiple quantities can be
+        bundled in a sequence for convenience, but this is not more efficient than
+        running multiple queries by hand.
     energy_type: str, optional
         Energy unit for the requested quantity. Default is R.
         Valid values: EKN, EK, R, ETOT, ETOTN.
@@ -375,6 +379,28 @@ def query(
 
         clear_cache()
     """
+    if not isinstance(quantity, str):
+        results = [
+            query(
+                quantity=q,
+                energy_type=energy_type,
+                combo_level=combo_level,
+                energy_convert_level=energy_convert_level,
+                flux_rescaling=flux_rescaling,
+                exp_dates=exp_dates,
+                energy_start=energy_start,
+                energy_stop=energy_stop,
+                time_start=time_start,
+                time_stop=time_stop,
+                time_series=time_series,
+                format=format,
+                modulation=modulation,
+                server_url=server_url,
+                timeout=timeout,
+            )
+            for q in quantity
+        ]
+        return np.concatenate(results)
 
     url = _url(
         quantity=quantity,
@@ -514,7 +540,7 @@ def _load(url, timeout):
 
     # convert text to numpy record array
     fields = [
-        ("quantity", "U10"),
+        ("quantity", "U32"),
         ("sub_exp", "U100"),
         ("e_axis", "U4"),
         ("e_mean", "f8"),
@@ -544,6 +570,12 @@ def _load(url, timeout):
             continue
         mask = table["sub_exp"] == sub_exp
         table["sub_exp"][mask] = sub_exp.replace(code, "&")
+
+    # workaround: err_stat_minus or err_sys_minus may be negative
+    for x in ("stat", "sys"):
+        field = f"err_{x}_minus"
+        table[field] = np.abs(table[field])
+
     return table
 
 
@@ -570,3 +602,25 @@ def clear_cache():
     Delete the local CRDB cache.
     """
     _server_request.clear_cache()
+
+
+def reference_urls(table):
+    result = []
+    for key in sorted(np.unique(table["ads_url"])):
+        result.append(f"https://ui.adsabs.harvard.edu/abs/{key}")
+    return result
+
+
+def bibliography(table):
+    try:
+        from autobib.util import get_entry_online
+    except ModuleNotFoundError as e:
+        e.msg += ". Install autobib (`pip install autobib`) to use this function."
+        raise
+
+    result = {}
+    for adskey in sorted(np.unique(table["ads_url"])):
+        k, *r = get_entry_online(adskey)
+        result[k] = "".join(r)
+
+    return result

@@ -1,4 +1,6 @@
-__version__ = '0.0.0'
+from importlib.metadata import version
+
+__version__ = version("crdb")
 
 from ._lib import (
     query,
@@ -11,6 +13,7 @@ from ._lib import (
 
 
 __all__ = [
+    "__version__",
     "VALID_NAMES",
     "query",
     "clear_cache",

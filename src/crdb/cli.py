@@ -1,4 +1,5 @@
 import argparse
+import crdb
 from crdb._lib import _url, _server_request, query
 import inspect
 import re
@@ -30,7 +31,18 @@ def main(args=None):
         else:
             parser.add_argument(f"--{name2}", type=tp, default=par.default, help=h)
 
-    parser.add_argument("--timeout", type=int, default=120)
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=120,
+        help="Timeout for server request in seconds. Default is 120.",
+    )
+    parser.add_argument(
+        "-v,--version",
+        action="version",
+        version=f"%(prog)s {crdb.__version__}",
+        help="Print version of crdb Python library.",
+    )
 
     args = parser.parse_args(args=args)
     kwargs = {k.replace("-", "_"): v for (k, v) in vars(args).items() if k != "timeout"}

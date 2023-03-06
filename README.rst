@@ -51,9 +51,6 @@ Installation
 
     pip install crdb
 
-You can install the in-development version with::
-
-    pip install https://github.com/crdb-project/crdb/archive/main.zip
 
 Documentation
 =============

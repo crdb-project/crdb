@@ -5,5 +5,5 @@ def test_main():
     main(["B/C"])
 
 
-def test_version():
+def test_version(capsys):
     main(["-v"])

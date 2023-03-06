@@ -38,9 +38,9 @@ def main(args=None):
         help="Timeout for server request in seconds. Default is 120.",
     )
     parser.add_argument(
-        "-v,--version",
+        "--version",
         action="version",
-        version=f"%(prog)s {crdb.__version__}",
+        version=f"crdb-{crdb.__version__}",
         help="Print version of crdb Python library.",
     )
 

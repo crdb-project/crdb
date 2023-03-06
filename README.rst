@@ -6,7 +6,9 @@ CRDB Python frontend
 
 |docs| |github-ci| |codecov| |version| |wheel| |supported-versions| |supported-implementations|
 
-Official website of the CRDB with online-viewer and documentation: https://lpsc.in2p3.fr/crdb.
+This is Python frontend to the CRDB, a database with published data from cosmic ray measurements. The official website of the CRDB with online-viewer and documentation on the database is https://lpsc.in2p3.fr/crdb. The frontend also installs a command-line interface called `crdb` to conveniently download data.
+
+The Python frontend internally uses the REST API of CRDB to download data from the database. A tutorial on using the REST API directly can be found at the  `CRDB tutorial repository <https://github.com/crdb-project/tutorial>`_. The repository also `contains example code on how to make standard plots <https://github.com/crdb-project/tutorial/blob/master/gallery.ipynb>`_ using the `crdb` Python frontend. 
 
 .. start-badges
 
@@ -53,6 +55,12 @@ You can install the in-development version with::
 
     pip install https://github.com/crdb-project/crdb/archive/main.zip
 
+Documentation
+=============
+
+The official website of the CRDB has documentation on the database, see https://lpsc.in2p3.fr/crdb. To obtain documentation for the `crdb` Python package, just use `help(crdb)` in the Python interpreter. The command-line frontend comes with built-in help, just run::
+
+    crdb --help
 
 .. |CRDB| image:: https://lpsc.in2p3.fr/crdb/img/crdb_logo.svg
     :target: https://lpsc.in2p3.fr/crdb

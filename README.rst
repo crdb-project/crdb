@@ -4,7 +4,7 @@ CRDB Python frontend
 
 |CRDB|
 
-|docs| |github-ci| |codecov| |version| |wheel| |supported-versions| |supported-implementations|
+|docs| |github-ci| |version| |wheel| |supported-versions| |supported-implementations|
 
 This is Python frontend to the CRDB, a database with published data from cosmic ray measurements. The official website of the CRDB with online-viewer and documentation on the database is https://lpsc.in2p3.fr/crdb. The frontend also installs a command-line interface called `crdb` to conveniently download data.
 

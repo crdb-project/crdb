@@ -22,12 +22,13 @@ def main(args=None):
     for name, par in inspect.signature(_url).parameters.items():
         name2 = name.replace("_", "-")
         h = descriptions.get(name, "").replace("%", "%%")
+        tp = par.annotation
+        if isinstance(tp, str):
+            tp = eval(tp)
         if par.default is inspect.Parameter.empty:
-            parser.add_argument(name2, type=par.annotation, help=h)
+            parser.add_argument(name2, type=tp, help=h)
         else:
-            parser.add_argument(
-                f"--{name2}", type=par.annotation, default=par.default, help=h
-            )
+            parser.add_argument(f"--{name2}", type=tp, default=par.default, help=h)
 
     parser.add_argument("--timeout", type=int, default=120)
 

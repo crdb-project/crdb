@@ -5,6 +5,8 @@ import warnings
 import cachier
 import datetime
 from typing import Union, Sequence
+import urllib
+import tempfile
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (
@@ -296,7 +298,6 @@ def query(
     time_start: str = "",
     time_stop: str = "",
     time_series: str = "",
-    format: str = "",
     modulation: str = "",
     timeout: int = 120,
     server_url: str = "http://lpsc.in2p3.fr/crdb",
@@ -344,8 +345,6 @@ def query(
     time_series: str, optional
         Whether to discard, select only, or keep time series data in query CRDB keywords
         ('no', 'only', 'all'). Default is 'no'.
-    format: str, optional
-        Output format, one of 'csv', 'usine', 'galprop'. Default is 'csv'.
     modulation: str, optional
         Source of Solar modulation values; one of 'USO05', 'USO17', 'GHE17'. Default is
         'GHE17'.
@@ -393,7 +392,6 @@ def query(
                 time_start=time_start,
                 time_stop=time_stop,
                 time_series=time_series,
-                format=format,
                 modulation=modulation,
                 server_url=server_url,
                 timeout=timeout,
@@ -414,11 +412,22 @@ def query(
         time_start=time_start,
         time_stop=time_stop,
         time_series=time_series,
-        format=format,
+        format="",
         modulation=modulation,
         server_url=server_url,
     )
-    return _load(url, timeout=timeout)
+
+    data = _server_request(url, timeout)
+
+    # check for errors and display them
+    if len(data) == 1:
+        raise ValueError(data[0])
+
+    # TODO remove this workaround when server response is fixed
+    if len(data) == 0:
+        raise ValueError("invalid query")
+
+    return _convert(data)
 
 
 def _url(
@@ -441,15 +450,20 @@ def _url(
     Build a query URL for the CRDB server.
     """
 
-    # "+" must be escaped in URL, see
-    # https://en.wikipedia.org/wiki/Percent-encoding
-    quantity = quantity.replace("+", "%2B")
     num, *rest = quantity.split("/")
     if len(rest) > 1:
         raise ValueError("ratio contains more than one / operator")
 
     num = num.strip()
     den = rest[0].strip() if rest else ""
+
+    if num not in VALID_NAMES or (den and den not in VALID_NAMES):
+        raise ValueError(f"quantity {quantity} is not valid, see crdb.VALID_NAMES")
+
+    # "+" must be escaped in URL, see
+    # https://en.wikipedia.org/wiki/Percent-encoding
+    num = num.replace("+", "%2B")
+    den = den.replace("+", "%2B")
 
     # workaround for empty error message from CRDB
     valid_energy_types = ("EKN", "EK", "R", "ETOT", "ETOTN")
@@ -464,6 +478,9 @@ def _url(
 
     if flux_rescaling < 0 or flux_rescaling > 2.5:
         raise ValueError(f"invalid flux_rescaling {flux_rescaling}")
+
+    if format and format not in ("usine", "galprop", "csv"):
+        raise ValueError(f"invalid format {format}")
 
     # do the query
     kwargs = {
@@ -513,31 +530,16 @@ def _server_request(url, timeout):
 
     if timeout_error:
         raise TimeoutError(
-            f"Server did not respond within timeout={timeout} to url={url}"
+            f"server did not respond within timeout={timeout} to url={url}"
         )
 
     if not data:
         raise ValueError("empty server response")
 
-    # workaround: if first line starts with <html>,
-    # remove first and last line with html tags
-    if data[0].startswith("<html>"):
-        data = data[1:-1]
-
     return data
 
 
-def _load(url, timeout):
-    data = _server_request(url, timeout)
-
-    # check for errors and display them
-    if len(data) == 1:
-        raise ValueError(data[0])
-
-    # TODO remove this workaround when server response is fixed
-    if len(data) == 0:
-        raise ValueError("invalid query")
-
+def _convert(data):
     # convert text to numpy record array
     fields = [
         ("quantity", "U32"),
@@ -605,6 +607,9 @@ def clear_cache():
 
 
 def reference_urls(table):
+    """
+    Return list of URLs to entries in the ADSABS database for datasets in table.
+    """
     result = []
     for key in sorted(np.unique(table["ads_url"])):
         result.append(f"https://ui.adsabs.harvard.edu/abs/{key}")
@@ -612,6 +617,11 @@ def reference_urls(table):
 
 
 def bibliography(table):
+    """
+    Return dictionary that maps ADSABS keys in table to BibTex entries.
+
+    This requires the external library `autobib`.
+    """
     try:
         from autobib.util import get_entry_online
     except ModuleNotFoundError as e:
@@ -624,3 +634,37 @@ def bibliography(table):
         result[k] = "".join(r)
 
     return result
+
+
+@cachier.cachier(stale_after=datetime.timedelta(days=30))
+def all():
+    """
+    Return the full raw CRDB database as a table.
+    """
+    url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=usine"
+
+    try:
+        response = urllib.request.urlopen(url)
+    except BaseException:
+        raise ConnectionError(
+            "Please check if you have internet connection. If that's not the issue, "
+            f"something is wrong with url = '{url}', please report this as an issue at "
+            "https://github.com/crdb-project/crdb/issues"
+        )
+
+    blocksize = 1024**2
+    nbytes = 0
+    with tempfile.TemporaryFile() as f:
+        while True:
+            chunk = response.read(blocksize)
+            nbytes += len(chunk)
+            print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
+            if not chunk:
+                break
+            f.write(chunk)
+        print()
+        f.flush()
+        f.seek(0)
+        data = f.readlines()
+
+    return _convert(data)

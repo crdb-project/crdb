@@ -3,6 +3,8 @@ import crdb
 from crdb._lib import _url, _server_request, query
 import inspect
 import re
+import sys
+import traceback
 
 
 def main(args=None):
@@ -19,6 +21,9 @@ def main(args=None):
             r"^ {4}([a-z_]+): *[a-z, ]+\n((?: {8}.+\n)+)", query.__doc__, re.MULTILINE
         )
     }
+    descriptions[
+        "format"
+    ] = "Output format; one of 'usine', 'galprop', 'csv'. Default is 'usine'."
 
     for name, par in inspect.signature(_url).parameters.items():
         name2 = name.replace("_", "-")
@@ -26,10 +31,13 @@ def main(args=None):
         tp = par.annotation
         if isinstance(tp, str):
             tp = eval(tp)
-        if par.default is inspect.Parameter.empty:
-            parser.add_argument(name2, type=tp, help=h)
-        else:
-            parser.add_argument(f"--{name2}", type=tp, default=par.default, help=h)
+        kwargs = {
+            "type": tp,
+            "help": h,
+        }
+        if par.default is not inspect.Parameter.empty:
+            kwargs["default"] = par.default
+        parser.add_argument(f"--{name2}" if "default" in kwargs else name2, **kwargs)
 
     parser.add_argument(
         "--timeout",
@@ -46,6 +54,10 @@ def main(args=None):
 
     args = parser.parse_args(args=args)
     kwargs = {k.replace("-", "_"): v for (k, v) in vars(args).items() if k != "timeout"}
-    url = _url(**kwargs)
+    try:
+        url = _url(**kwargs)
+    except ValueError as e:
+        sys.stderr.write("".join(traceback.format_exception_only(e)))
+        sys.exit(1)
     data = _server_request(url, timeout=args.timeout)
     print("\n".join(data))

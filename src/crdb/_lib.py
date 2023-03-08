@@ -479,8 +479,14 @@ def _url(
     if flux_rescaling < 0 or flux_rescaling > 2.5:
         raise ValueError(f"invalid flux_rescaling {flux_rescaling}")
 
+    if time_series and time_series not in ("no", "only", "all"):
+        raise ValueError(f"invalid time_series {time_series}")
+
     if format and format not in ("usine", "galprop", "csv"):
         raise ValueError(f"invalid format {format}")
+
+    if modulation and modulation not in ("USO05", "USO17", "GHE17"):
+        raise ValueError(f"invalid modulation {modulation}")
 
     # do the query
     kwargs = {

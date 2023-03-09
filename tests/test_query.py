@@ -1,4 +1,5 @@
 import pytest
+
 from crdb import query
 
 
@@ -15,11 +16,19 @@ def test_query(quantity):
     assert len(tab) > 1
 
 
-def test_bad_query_1():
+def test_bad_query():
     with pytest.raises(ValueError):
         query("Foobar")
 
-
-def test_bad_query_2():
     with pytest.raises(ValueError):
         query("H", energy_type="Foobar")
+
+
+def test_recarray_1():
+    tab = query("Li")
+    assert len(tab.sub_exp) > 1
+
+
+def test_recarray_2():
+    tab = query(("Li", "e+"))
+    assert len(tab.sub_exp) > 1

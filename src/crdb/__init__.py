@@ -1,25 +1,28 @@
 from importlib.metadata import version
 
-__version__ = version("crdb")
+from crdb._lib import COMBINE
+from crdb._lib import ELEMENTS
+from crdb._lib import VALID_NAMES
+from crdb._lib import all
+from crdb._lib import bibliography
+from crdb._lib import clear_cache
+from crdb._lib import experiment_masks
+from crdb._lib import query
+from crdb._lib import reference_urls
+from crdb._lib import solar_system_composition
 
-from ._lib import (
-    query,
-    clear_cache,
-    experiment_masks,
-    VALID_NAMES,
-    reference_urls,
-    bibliography,
-    all,
-)
-
-
-__all__ = [
+__all__ = (
     "__version__",
     "VALID_NAMES",
-    "query",
+    "COMBINE",
+    "ELEMENTS",
+    "all",
+    "bibliography",
     "clear_cache",
     "experiment_masks",
+    "query",
     "reference_urls",
-    "bibliography",
-    "all",
-]
+    "solar_system_composition",
+)
+
+__version__ = version("crdb")

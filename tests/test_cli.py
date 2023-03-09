@@ -1,5 +1,5 @@
-from crdb.cli import main
 import crdb
+from crdb.cli import main
 
 
 def test_main():

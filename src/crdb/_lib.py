@@ -1,12 +1,21 @@
 from __future__ import annotations
-import urllib.request as rq
-import numpy as np
-import warnings
-import cachier
+
 import datetime
-from typing import Union, Sequence
-import urllib
+import re
 import tempfile
+import urllib
+import urllib.request as rq
+import warnings
+from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Sequence
+from typing import Tuple
+from typing import Union
+
+import cachier
+import numpy as np
+from numpy.typing import NDArray
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (
@@ -285,6 +294,44 @@ VALID_NAMES = (
     "9Be+10Be",
 )
 
+ELEMENTS = {k: i + 1 for (i, k) in enumerate(VALID_NAMES[:99])}
+
+COMBINE = (
+    "AESOP",
+    "AMS01",
+    "ATIC",
+    "BESS",
+    "BETS",
+    "Balloon",
+    "CAPRICE",
+    "CREAM",
+    "Fermi-LAT",
+    "Gemini",
+    "H.E.S.S.",
+    "HEAO3",
+    "HEAT",
+    "IMAX",
+    "IMP",
+    "ISEE3",
+    "IceCube",
+    "KASCADE-Grande",
+    "MASS",
+    "NUCLEON",
+    "OGO",
+    "PAMELA",
+    "PierreAugerObservatory",
+    "Pioneer",
+    "SMILI",
+    "TRACER",
+    "TUNKA",
+    "TelescopeArray",
+    "Tibet",
+    "Trek",
+    "UHECR-LDEF",
+    "Ulysses",
+    "Voyager",
+)
+
 
 def query(
     quantity: Union[str, Sequence[str]],
@@ -398,7 +445,7 @@ def query(
             )
             for q in quantity
         ]
-        return np.concatenate(results)
+        return np.concatenate(results).view(np.recarray)
 
     url = _url(
         quantity=quantity,
@@ -524,7 +571,7 @@ def _url(
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def _server_request(url, timeout):
+def _server_request(url: str, timeout: int) -> List[str]:
     # if there is a timeout error, we hide original long traceback from the internal
     # libs and instead show a simple traceback
     try:
@@ -545,7 +592,7 @@ def _server_request(url, timeout):
     return data
 
 
-def _convert(data):
+def _convert(data: List[str]) -> NDArray:
     # convert text to numpy record array
     fields = [
         ("quantity", "U32"),
@@ -584,35 +631,57 @@ def _convert(data):
         field = f"err_{x}_minus"
         table[field] = np.abs(table[field])
 
-    return table
+    return table.view(np.recarray)
 
 
-def experiment_masks(table):
+def experiment_masks(
+    table: NDArray, combine: Sequence[str] = COMBINE
+) -> Dict[str, NDArray]:
     """
     Generate masks which select all points from each experiment.
 
-    This returns a dict which maps the experiment name to the mask. Different data taking
-    campains are joined.
+    Different data taking campains are joined. Optionally, one can also
+    join different experiments with the same name, e.g. AEASOP00, AESOP02, ...
+
+    Parameters
+    ----------
+    table : array
+        CRDB database table.
+    combine : sequence of str, optional
+        Further combine all experiments which these common prefixes.
+        The default is to combine all experiments listed in crdb.COMBINE.
+
+    Returns
+    -------
+    Dict[str, NDArray]
+        Dictionary which maps the experiment name to its table mask.
     """
+    if combine is None:
+        combine = COMBINE
+
     # generate a mask per experiment, see `CRDB REST query tutorial.ipynb` for details
-    experiments = {}
+    result = {}
     for this_sub_exp in np.unique(table["sub_exp"]):
-        exp = this_sub_exp[: this_sub_exp.find("(")]
+        for c in combine:
+            if this_sub_exp.startswith(c):
+                exp = c
+                break
+        else:
+            exp = this_sub_exp[: this_sub_exp.find("(")]
         mask = table["sub_exp"] == this_sub_exp
-        exp_mask = experiments.get(exp, False)
-        exp_mask |= mask
-        experiments[exp] = exp_mask
-    return experiments
+        mask2 = result.get(exp, False)
+        result[exp] = mask2 | mask
+    return result
 
 
-def clear_cache():
+def clear_cache() -> None:
     """
     Delete the local CRDB cache.
     """
     _server_request.clear_cache()
 
 
-def reference_urls(table):
+def reference_urls(table: NDArray) -> List[str]:
     """
     Return list of URLs to entries in the ADSABS database for datasets in table.
     """
@@ -622,7 +691,7 @@ def reference_urls(table):
     return result
 
 
-def bibliography(table):
+def bibliography(table: NDArray) -> Dict[str, str]:
     """
     Return dictionary that maps ADSABS keys in table to BibTex entries.
 
@@ -643,7 +712,7 @@ def bibliography(table):
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def all():
+def all() -> NDArray:
     """
     Return the full raw CRDB database as a table.
     """
@@ -674,3 +743,30 @@ def all():
         data = f.readlines()
 
     return _convert(data)
+
+
+def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
+    """
+    Return a dict with the isotope composition in the solar system.
+
+    Data are taken from:
+    Lodders, ApJ 591, 1220 (2003)
+    http://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+
+    Returns
+    -------
+    Dictionary that maps element names to lists of isotope abundances. Isotopes are
+    described by the tuple (A, F), where A is the number of nucleons, and F is the
+    abundance in arbitrary units.
+    """
+    result = {}
+    with open(Path(__file__).parent / "solarsystem_abundances2003.dat") as f:
+        for line in f:
+            m = re.match(r"^ *([0-9]+)([A-Za-z]+)\s*[0-9\.]+\s*([0-9\.e]+)", line)
+            if not m:
+                continue
+            a = int(m.group(1))
+            elem = m.group(2)
+            f = float(m.group(3))
+            result.setdefault(elem, []).append((a, f))
+    return result

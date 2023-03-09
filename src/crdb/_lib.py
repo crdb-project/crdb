@@ -4,9 +4,11 @@ import numpy as np
 import warnings
 import cachier
 import datetime
-from typing import Union, Sequence
+from typing import Union, Sequence, Dict, Tuple, List
 import urllib
 import tempfile
+import re
+from pathlib import Path
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (
@@ -283,6 +285,44 @@ VALID_NAMES = (
     "Z_59-60",
     "Zgeq70",
     "9Be+10Be",
+)
+
+ELEMENTS = {k: i + 1 for (i, k) in enumerate(VALID_NAMES[:100])}
+
+COMBINE = (
+    "AESOP",
+    "AMS01",
+    "ATIC",
+    "BESS",
+    "BETS",
+    "Balloon",
+    "CAPRICE",
+    "CREAM",
+    "Fermi-LAT",
+    "Gemini",
+    "H.E.S.S.",
+    "HEAO3",
+    "HEAT",
+    "IMAX",
+    "IMP",
+    "ISEE3",
+    "IceCube",
+    "KASCADE-Grande",
+    "MASS",
+    "NUCLEON",
+    "OGO",
+    "PAMELA",
+    "PierreAugerObservatory",
+    "Pioneer",
+    "SMILI",
+    "TRACER",
+    "TUNKA",
+    "TelescopeArray",
+    "Tibet",
+    "Trek",
+    "UHECR-LDEF",
+    "Ulysses",
+    "Voyager",
 )
 
 
@@ -584,25 +624,45 @@ def _convert(data):
         field = f"err_{x}_minus"
         table[field] = np.abs(table[field])
 
-    return table
+    return table.view(np.recarray)
 
 
-def experiment_masks(table):
+def experiment_masks(table, combine=None):
     """
     Generate masks which select all points from each experiment.
 
-    This returns a dict which maps the experiment name to the mask. Different data taking
-    campains are joined.
+    Different data taking campains are joined. Optionally, one can also
+    join different experiments with the same name, e.g. AEASOP00, AESOP02, ...
+
+    Parameters
+    ----------
+    table : array
+        CRDB database table.
+    combine : list of str or None, optional
+        Further combine all experiments which these common prefixes.
+        If None (the default), combine the experiments in crdb.COMBINE.
+
+    Returns
+    -------
+    Dict[str, NDArray]
+        Dictionary which maps the experiment name to its table mask.
     """
+    if combine is None:
+        combine = COMBINE
+
     # generate a mask per experiment, see `CRDB REST query tutorial.ipynb` for details
-    experiments = {}
+    result = {}
     for this_sub_exp in np.unique(table["sub_exp"]):
-        exp = this_sub_exp[: this_sub_exp.find("(")]
+        for c in combine:
+            if this_sub_exp.startswith(c):
+                exp = c
+                break
+        else:
+            exp = this_sub_exp[: this_sub_exp.find("(")]
         mask = table["sub_exp"] == this_sub_exp
-        exp_mask = experiments.get(exp, False)
-        exp_mask |= mask
-        experiments[exp] = exp_mask
-    return experiments
+        mask2 = result.get(exp, False)
+        result[exp] = mask2 | mask
+    return result
 
 
 def clear_cache():
@@ -674,3 +734,30 @@ def all():
         data = f.readlines()
 
     return _convert(data)
+
+
+def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
+    """
+    Return a dict with the isotope composition in the solar system.
+
+    Data are taken from:
+    Lodders, ApJ 591, 1220 (2003)
+    http://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+
+    Returns
+    -------
+    Dictionary that maps element names to lists of isotope abundances. Isotopes are
+    described by the tuple (A, F), where A is the number of nucleons, and F is the
+    abundance in arbitrary units.
+    """
+    result = {}
+    with open(Path(__file__).parent / "solarsystem_abundances2003.dat") as f:
+        for line in f:
+            m = re.match(r"^ *([0-9]+)([A-Za-z]+)\s*[0-9\.]+\s*([0-9\.e]+)", line)
+            if not m:
+                continue
+            a = int(m.group(1))
+            elem = m.group(2)
+            f = float(m.group(3))
+            result.setdefault(elem, []).append((a, f))
+    return result

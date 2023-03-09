@@ -56,6 +56,9 @@ doc = [
     "ipykernel",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools_scm]
 
 [tool.mypy]

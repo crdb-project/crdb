@@ -294,7 +294,7 @@ VALID_NAMES = (
     "9Be+10Be",
 )
 
-ELEMENTS = {k: i + 1 for (i, k) in enumerate(VALID_NAMES[:100])}
+ELEMENTS = {k: i + 1 for (i, k) in enumerate(VALID_NAMES[:99])}
 
 COMBINE = (
     "AESOP",

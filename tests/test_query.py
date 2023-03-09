@@ -24,6 +24,11 @@ def test_bad_query():
         query("H", energy_type="Foobar")
 
 
-def test_recarray():
+def test_recarray_1():
     tab = query("Li")
+    assert len(tab.sub_exp) > 1
+
+
+def test_recarray_2():
+    tab = query(("Li", "e+"))
     assert len(tab.sub_exp) > 1

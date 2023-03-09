@@ -445,7 +445,7 @@ def query(
             )
             for q in quantity
         ]
-        return np.concatenate(results)
+        return np.concatenate(results).view(np.recarray)
 
     url = _url(
         quantity=quantity,

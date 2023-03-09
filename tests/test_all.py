@@ -1,5 +1,6 @@
-from crdb import all
 import pytest
+
+from crdb import all
 
 
 @pytest.mark.parametrize("quantity", ("B/C", "H", "Li"))

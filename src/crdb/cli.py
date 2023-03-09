@@ -1,10 +1,13 @@
 import argparse
-import crdb
-from crdb._lib import _url, _server_request, query
 import inspect
 import re
 import sys
 import traceback
+
+import crdb
+from crdb._lib import _server_request
+from crdb._lib import _url
+from crdb._lib import query
 
 
 def main(args=None):

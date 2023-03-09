@@ -1,14 +1,21 @@
 from __future__ import annotations
-import urllib.request as rq
-import numpy as np
-import warnings
-import cachier
+
 import datetime
-from typing import Union, Sequence, Dict, Tuple, List
-import urllib
-import tempfile
 import re
+import tempfile
+import urllib
+import urllib.request as rq
+import warnings
 from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Sequence
+from typing import Tuple
+from typing import Union
+
+import cachier
+import numpy as np
+from numpy.typing import NDArray
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (
@@ -564,7 +571,7 @@ def _url(
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def _server_request(url, timeout):
+def _server_request(url: str, timeout: int) -> List[str]:
     # if there is a timeout error, we hide original long traceback from the internal
     # libs and instead show a simple traceback
     try:
@@ -585,7 +592,7 @@ def _server_request(url, timeout):
     return data
 
 
-def _convert(data):
+def _convert(data: List[str]) -> NDArray:
     # convert text to numpy record array
     fields = [
         ("quantity", "U32"),
@@ -627,7 +634,9 @@ def _convert(data):
     return table.view(np.recarray)
 
 
-def experiment_masks(table, combine=None):
+def experiment_masks(
+    table: NDArray, combine: Sequence[str] = COMBINE
+) -> Dict[str, NDArray]:
     """
     Generate masks which select all points from each experiment.
 
@@ -638,9 +647,9 @@ def experiment_masks(table, combine=None):
     ----------
     table : array
         CRDB database table.
-    combine : list of str or None, optional
+    combine : sequence of str, optional
         Further combine all experiments which these common prefixes.
-        If None (the default), combine the experiments in crdb.COMBINE.
+        The default is to combine all experiments listed in crdb.COMBINE.
 
     Returns
     -------
@@ -665,14 +674,14 @@ def experiment_masks(table, combine=None):
     return result
 
 
-def clear_cache():
+def clear_cache() -> None:
     """
     Delete the local CRDB cache.
     """
     _server_request.clear_cache()
 
 
-def reference_urls(table):
+def reference_urls(table: NDArray) -> List[str]:
     """
     Return list of URLs to entries in the ADSABS database for datasets in table.
     """
@@ -682,7 +691,7 @@ def reference_urls(table):
     return result
 
 
-def bibliography(table):
+def bibliography(table: NDArray) -> Dict[str, str]:
     """
     Return dictionary that maps ADSABS keys in table to BibTex entries.
 
@@ -703,7 +712,7 @@ def bibliography(table):
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def all():
+def all() -> NDArray:
     """
     Return the full raw CRDB database as a table.
     """

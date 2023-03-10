@@ -717,9 +717,16 @@ def all() -> NDArray:
 
     try:
         response = urllib.request.urlopen(url)
-    except Exception as e:
-        e.msg += (
-            ". Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
+        connection_error = False
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        connection_error = True
+
+    if connection_error:
+        raise ConnectionError(
+            "Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
             "browser. If that works, something is wrong with url = '{url}', "
             "please report this as an issue at "
             "https://github.com/crdb-project/crdb/issues"

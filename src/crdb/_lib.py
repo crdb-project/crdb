@@ -727,7 +727,7 @@ def all() -> NDArray:
     if connection_error:
         raise ConnectionError(
             "Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
-            "browser. If that works, something is wrong with url = '{url}', "
+            f"browser. If that works, something is wrong with url = '{url}', "
             "please report this as an issue at "
             "https://github.com/crdb-project/crdb/issues"
         )

@@ -4,13 +4,9 @@ Experimental utilitites for the crdb Python package.
 The functions in this module are not stable and their API can
 change at any time. Use with caution.
 """
-from typing import Dict
-from typing import Sequence
-
 import numpy as np
 from numpy.typing import NDArray
 
-from crdb import COMBINE
 from crdb import ELEMENTS
 from crdb import VALID_NAMES
 from crdb import solar_system_composition
@@ -112,44 +108,3 @@ def _convert_energy(tab, mask, f):
     tab[mask].err_stat_plus /= f
     tab[mask].err_sys_minus /= f
     tab[mask].err_sys_plus /= f
-
-
-def experiment_masks(
-    table: NDArray, combine: Sequence[str] = COMBINE
-) -> Dict[str, NDArray]:
-    """
-    Generate masks which select all points from each experiment.
-
-    Different data taking campains are joined. Optionally, one can also
-    join different experiments with the same name, e.g. AEASOP00, AESOP02, ...
-
-    Parameters
-    ----------
-    table : array
-        CRDB database table.
-    combine : sequence of str, optional
-        Further combine all experiments which these common prefixes.
-        The default is to combine all experiments listed in crdb.COMBINE.
-
-    Returns
-    -------
-    Dict[str, NDArray]
-        Dictionary which maps the experiment name to its table mask.
-    """
-    d = {}
-    for key in np.unique(table.sub_exp):
-        for c in combine:
-            if key.startswith(c):
-                d[key] = c
-                break
-        else:
-            c = key[: key.index("(")]
-            d[key] = c
-
-    result = {}
-    for i, t in enumerate(table):
-        c = d[t.sub_exp]
-        if c not in result:
-            result[c] = np.zeros(len(table), dtype=bool)
-        result[c][i] = True
-    return result

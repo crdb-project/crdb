@@ -717,10 +717,11 @@ def all() -> NDArray:
 
     try:
         response = urllib.request.urlopen(url)
-    except BaseException:
-        raise ConnectionError(
-            "Please check if you have internet connection. If that's not the issue, "
-            f"something is wrong with url = '{url}', please report this as an issue at "
+    except Exception as e:
+        e.msg += (
+            ". Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
+            "browser. If that works, something is wrong with url = '{url}', "
+            "please report this as an issue at "
             "https://github.com/crdb-project/crdb/issues"
         )
 

@@ -470,10 +470,6 @@ def query(
     if len(data) == 1:
         raise ValueError(data[0])
 
-    # TODO remove this workaround when server response is fixed
-    if len(data) == 0:
-        raise ValueError("invalid query")
-
     return _convert(data)
 
 
@@ -615,7 +611,7 @@ def _convert(data: List[str]) -> NDArray:
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        table = np.genfromtxt(data, fields)
+        table = np.loadtxt(data, fields)
 
     # workaround: replace &amp; in sub_exp strings
     sub_exps = np.unique(table["sub_exp"])
@@ -656,21 +652,22 @@ def experiment_masks(
     Dict[str, NDArray]
         Dictionary which maps the experiment name to its table mask.
     """
-    if combine is None:
-        combine = COMBINE
-
-    # generate a mask per experiment, see `CRDB REST query tutorial.ipynb` for details
-    result = {}
-    for this_sub_exp in np.unique(table["sub_exp"]):
+    d = {}
+    for key in np.unique(table.sub_exp):
         for c in combine:
-            if this_sub_exp.startswith(c):
-                exp = c
+            if key.startswith(c):
+                d[key] = c
                 break
         else:
-            exp = this_sub_exp[: this_sub_exp.find("(")]
-        mask = table["sub_exp"] == this_sub_exp
-        mask2 = result.get(exp, False)
-        result[exp] = mask2 | mask
+            c = key[: key.index("(")]
+            d[key] = c
+
+    result = {}
+    for i, t in enumerate(table):
+        c = d[t.sub_exp]
+        if c not in result:
+            result[c] = np.zeros(len(table), dtype=bool)
+        result[c][i] = True
     return result
 
 
@@ -720,10 +717,18 @@ def all() -> NDArray:
 
     try:
         response = urllib.request.urlopen(url)
-    except BaseException:
+        connection_error = False
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        connection_error = True
+
+    if connection_error:
         raise ConnectionError(
-            "Please check if you have internet connection. If that's not the issue, "
-            f"something is wrong with url = '{url}', please report this as an issue at "
+            "Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
+            f"browser. If that works, something is wrong with url = '{url}', "
+            "please report this as an issue at "
             "https://github.com/crdb-project/crdb/issues"
         )
 

@@ -48,6 +48,7 @@ crdb = "crdb.cli:main"
 [project.optional-dependencies]
 test = [
     "pytest",
+    "matplotlib",
 ]
 doc = [
     "sphinx",

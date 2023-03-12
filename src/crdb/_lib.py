@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import datetime
 import re
+import ssl
 import tempfile
-import urllib
 import urllib.request as rq
 import warnings
 from pathlib import Path
@@ -571,7 +571,8 @@ def _server_request(url: str, timeout: int) -> List[str]:
     # if there is a timeout error, we hide original long traceback from the internal
     # libs and instead show a simple traceback
     try:
-        with rq.urlopen(url, timeout=timeout) as u:
+        context = ssl._create_unverified_context()
+        with rq.urlopen(url, timeout=timeout, context=context) as u:
             data = u.read().decode("utf-8").split("\n")
         timeout_error = False
     except TimeoutError:
@@ -716,7 +717,8 @@ def all() -> NDArray:
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=usine"
 
     try:
-        response = urllib.request.urlopen(url)
+        context = ssl._create_unverified_context()
+        response = rq.urlopen(url, context=context)
         connection_error = False
     except Exception:
         import traceback

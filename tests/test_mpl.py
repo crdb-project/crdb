@@ -17,3 +17,7 @@ def test_draw_references(table):
 
 def test_draw_table(table):
     mpl.draw_table(table)
+
+
+def test_draw_logo():
+    mpl.draw_logo(1, 1)

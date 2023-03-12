@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
@@ -81,3 +83,31 @@ def draw_references(
     )
     leg.get_title().set_color(color)
     plt.gcf().add_artist(leg)
+
+
+def draw_logo(x, y, height=0.1, zorder=None):
+    """
+    Draw the CRDB logo.
+
+    Parameters
+    ----------
+    x : float
+        Left edge of image box in axes coordinates.
+    y : float
+        Upper edge of image box in axes coordinates.
+    height : float, optional
+        Height of image box in axes coordinates.
+    zorder : int, optional
+        Plotting order for the image.
+    """
+    from PIL import Image
+
+    img = np.asarray(Image.open(Path(__file__).parent / "crdb_logo.png"))
+    borderaxespad = 0.01
+    iax = plt.gca().inset_axes(
+        (x + borderaxespad, y - height, 2 * height, height), zorder=zorder
+    )
+    iax.set(xticks=[], yticks=[])
+    iax.spines[:].set_visible(False)
+    # iax.imshow(img, extent=(0, img.shape[1], img.shape[0], 0))
+    iax.imshow(img)

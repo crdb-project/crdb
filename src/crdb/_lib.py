@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import datetime
 import re
-import ssl
 import tempfile
-import urllib
-import urllib.request as rq
 import warnings
 from pathlib import Path
 from typing import Dict
@@ -16,6 +13,7 @@ from typing import Union
 
 import cachier
 import numpy as np
+import requests
 from numpy.typing import NDArray
 
 # from "Submit data" tab on CRDB website
@@ -572,9 +570,8 @@ def _server_request(url: str, timeout: int) -> List[str]:
     # if there is a timeout error, we hide original long traceback from the internal
     # libs and instead show a simple traceback
     try:
-        context = ssl._create_unverified_context()
-        with rq.urlopen(url, timeout=timeout, context=context) as u:
-            data = u.read().decode("utf-8").split("\n")
+        r = requests.get(url, timeout=timeout, verify=False)
+        data = r.content.split(b"\n")
         timeout_error = False
     except TimeoutError:
         timeout_error = True
@@ -718,8 +715,7 @@ def all() -> NDArray:
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=usine"
 
     try:
-        context = ssl._create_unverified_context()
-        response = urllib.request.urlopen(url, context=context)
+        r = requests.get(url, stream=True, verify=False)
         connection_error = False
     except Exception:
         import traceback
@@ -738,12 +734,9 @@ def all() -> NDArray:
     blocksize = 1024**2
     nbytes = 0
     with tempfile.TemporaryFile() as f:
-        while True:
-            chunk = response.read(blocksize)
+        for chunk in r.iter_content(chunk_size=blocksize):
             nbytes += len(chunk)
             print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
-            if not chunk:
-                break
             f.write(chunk)
         print()
         f.flush()

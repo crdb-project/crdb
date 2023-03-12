@@ -35,7 +35,7 @@ classifiers = [
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Utilities',
 ]
-dependencies = ["numpy", "cachier"]
+dependencies = ["numpy", "requests", "cachier"]
 dynamic = ["version"]
 
 [project.urls]

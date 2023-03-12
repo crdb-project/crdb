@@ -25,7 +25,7 @@ def draw_table(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     ye1 = table.err_stat_minus * factor, table.err_stat_plus * factor
     ye2 = table.err_sys_minus * factor, table.err_sys_plus * factor
     lines = plt.errorbar(table.e_mean, y, ye1, ls="none", label=label, **kwargs)[0]
-    for key in ("color", "alpha", "lw"):
+    for key in ("color", "alpha", "lw", "marker"):
         if key in kwargs:
             del kwargs[key]
     plt.errorbar(
@@ -39,6 +39,7 @@ def draw_table(table, factor=1.0, label=None, sys_lw=5, **kwargs):
         alpha=0.5,
         **kwargs,
     )
+    return lines
 
 
 def draw_references(
@@ -109,5 +110,4 @@ def draw_logo(x, y, height=0.1, zorder=None):
     )
     iax.set(xticks=[], yticks=[])
     iax.spines[:].set_visible(False)
-    # iax.imshow(img, extent=(0, img.shape[1], img.shape[0], 0))
     iax.imshow(img)

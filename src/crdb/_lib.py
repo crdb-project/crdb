@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import re
+import ssl
 import tempfile
 import urllib
 import urllib.request as rq
@@ -16,6 +17,9 @@ from typing import Union
 import cachier
 import numpy as np
 from numpy.typing import NDArray
+
+ssl.SSLContext.verify_mode = ssl.VerifyMode.CERT_OPTIONAL
+
 
 # from "Submit data" tab on CRDB website
 VALID_NAMES = (

@@ -4,7 +4,6 @@ import datetime
 import re
 import ssl
 import tempfile
-import urllib
 import urllib.request as rq
 import warnings
 from pathlib import Path
@@ -719,7 +718,7 @@ def all() -> NDArray:
 
     try:
         context = ssl._create_unverified_context()
-        response = urllib.request.urlopen(url, context=context)
+        response = rq.urlopen(url, context=context)
         connection_error = False
     except Exception:
         import traceback

@@ -14,7 +14,7 @@ def test_energy_conversion_numbers():
 
 def test_convert_energy():
     tab = all()
-    tab1 = tab[tab.e_axis == "R"]
+    tab1 = tab[tab.e_type == "R"]
     tab2 = convert_energy(tab1, "R")
     assert_equal(tab2, tab1)
     tab2 = convert_energy(tab1, "EK")

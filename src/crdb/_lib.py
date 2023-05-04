@@ -5,7 +5,6 @@ import re
 import ssl
 import tempfile
 import urllib.request as rq
-import warnings
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -335,6 +334,7 @@ COMBINE = (
 
 def query(
     quantity: Union[str, Sequence[str]],
+    *,
     energy_type: str = "R",
     combo_level: int = 1,
     energy_convert_level: int = 1,
@@ -406,6 +406,9 @@ def query(
 
     numpy record array with the database content
 
+    Energies are in GeV or GV. Solar modulation values are in MV. Distances are in
+    AU. Fluxes are in sr s m2 energy_unit.
+
     Raises
     ------
 
@@ -459,7 +462,7 @@ def query(
         time_start=time_start,
         time_stop=time_stop,
         time_series=time_series,
-        format="",
+        format="csv",
         modulation=modulation,
         server_url=server_url,
     )
@@ -470,7 +473,9 @@ def query(
     if len(data) == 1:
         raise ValueError(data[0])
 
-    return _convert(data)
+    table = _convert(data)
+
+    return table
 
 
 def _url(
@@ -525,7 +530,7 @@ def _url(
     if time_series and time_series not in ("no", "only", "all"):
         raise ValueError(f"invalid time_series {time_series}")
 
-    if format and format not in ("usine", "galprop", "csv"):
+    if format and format not in ("usine", "galprop", "csv", "csv-asimport"):
         raise ValueError(f"invalid format {format}")
 
     if modulation and modulation not in ("USO05", "USO17", "GHE17"):
@@ -591,28 +596,97 @@ def _server_request(url: str, timeout: int) -> List[str]:
 
 def _convert(data: List[str]) -> NDArray:
     # convert text to numpy record array
+
+    # Use this for csv-asimport or csv-extended when it becomes available
+    # fields set to None here are skipped during parsing
+    # fields = [
+    #     ("exp", "U64"),  # EXP-NAME
+    #     ("exp_type", "U16"),  # EXP-TYPE
+    #     None,  # EXP-HTML
+    #     None,  # EXP-STARTYEAR
+    #     ("sub_exp", "U100"),  # SUBEXP-NAME
+    #     None,  # SUBEXP-DESCRIPTION
+    #     ("e_relerr", "f8"),  # SUBEXP-ESCALE_RELERR
+    #     None,  # SUBEXP-INFO
+    #     ("distance", "f8"),  # SUBEXP-DISTANCE
+    #     ("datetime", "U64"),  # SUBEXP-DATES
+    #     ("ads", "U32"),  # PUBLI-HTML
+    #     None,  # PUBLI-DATAORIGIN
+    #     ("quantity", "U32"),  # DATA-QTY
+    #     ("e_axis", "U4"),  # DATA-EAXIS
+    #     ("e_mean", "f8"),  # DATA-E_MEAN
+    #     ("e_low", "f8"),  #  DATA-E_BIN_L
+    #     ("e_high", "f8"),  # DATA-E_BIN_U
+    #     ("value", "f8"),  # DATA-VAL
+    #     ("err_stat_minus", "f8"),  # DATA-VAL_ERRSTAT_L
+    #     ("err_stat_plus", "f8"),  # DATA-VAL_ERRSTAT_U
+    #     ("err_sys_minus", "f8"),  # DATA-VAL_ERRSYST_L
+    #     ("err_sys_plus", "f8"),  # DATA-VAL_ERRSYST_U
+    #     ("is_upper_limit", "?"),  # DATA-ISUPPERLIM
+    #     # ("phi", "f8"),
+    # ]
+
     fields = [
-        ("quantity", "U32"),
-        ("sub_exp", "U100"),
-        ("e_axis", "U4"),
-        ("e_mean", "f8"),
-        ("e_low", "f8"),
-        ("e_high", "f8"),
-        ("value", "f8"),
-        ("err_stat_minus", "f8"),
-        ("err_stat_plus", "f8"),
-        ("err_sys_minus", "f8"),
-        ("err_sys_plus", "f8"),
-        ("ads_url", "U32"),
-        ("phi_in_mv", "f8"),
-        ("distance_in_au", "f8"),
-        ("datetime", "U100"),
-        ("is_upper_limit", "?"),
+        ("quantity", "U32"),  # DATA-QTY
+        ("sub_exp", "U100"),  # SUBEXP-NAME
+        ("e_type", "U4"),  # DATA-EAXIS
+        ("e", "f8"),  # DATA-E_MEAN
+        ("e_bin", "f8", (2,)),  # EBIN_LOW, EBIN_HIGH
+        ("value", "f8"),  # QUANTITY VALUE
+        ("err_sta", "f8", (2,)),  # ERR_STAT-,  ERR_STAT+
+        ("err_sys", "f8", (2,)),  # ERR_SYST-, ERR_SYST+
+        ("ads", "U32"),  # ADS URL FOR PAPER REF
+        ("phi", "f8"),  # phi [MV]
+        ("distance", "f8"),  # DISTANCE [AU]
+        ("datetime", "U256"),  # DATIMES
+        ("is_upper_limit", "?"),  # IS UPPER LIMIT
     ]
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        table = np.loadtxt(data, fields)
+    mapping = []
+    for f in fields:
+        if f is None:
+            mapping.append(None)
+        if len(f) == 3:
+            for k in range(f[2][0]):
+                mapping.append((f[0], k))
+        else:
+            mapping.append(f[0])
+    fields = [x for x in fields if x is not None]
+
+    # workaround for invalid CSV format,
+    # to be replaced by standard parser
+    data2 = []
+    for iline, line in enumerate(data):
+        try:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            items = []
+            inquote = False
+            start = 0
+            for i, c in enumerate(line):
+                if c == '"':
+                    if inquote:
+                        items.append(line[start + 1 : i])
+                    else:
+                        start = i
+                    inquote = not inquote
+            data2.append(items)
+        except ValueError as e:
+            msg = f"{e.args[0]}\nCould not parse line {iline} {line}"
+            e.args = (msg,)
+            raise
+
+    table = np.recarray(len(data2), fields)
+    for idx, row in enumerate(data2):
+        for val, key in zip(row, mapping):
+            if key is None:
+                continue
+            if isinstance(key, tuple):
+                key, pos = key
+                table[idx][key][pos] = val
+            else:
+                table[idx][key] = val
 
     # workaround: replace &amp; in sub_exp strings
     sub_exps = np.unique(table["sub_exp"])
@@ -624,11 +698,11 @@ def _convert(data: List[str]) -> NDArray:
         table["sub_exp"][mask] = sub_exp.replace(code, "&")
 
     # workaround: err_stat_minus or err_sys_minus may be negative
-    for x in ("stat", "sys"):
-        field = f"err_{x}_minus"
+    for x in ("sta", "sys"):
+        field = f"err_{x}"
         table[field] = np.abs(table[field])
 
-    return table.view(np.recarray)
+    return table
 
 
 def experiment_masks(
@@ -684,7 +758,7 @@ def reference_urls(table: NDArray) -> List[str]:
     Return list of URLs to entries in the ADSABS database for datasets in table.
     """
     result = []
-    for key in sorted(np.unique(table["ads_url"])):
+    for key in sorted(np.unique(table.ads)):
         result.append(f"https://ui.adsabs.harvard.edu/abs/{key}")
     return result
 
@@ -702,7 +776,7 @@ def bibliography(table: NDArray) -> Dict[str, str]:
         raise
 
     result = {}
-    for adskey in sorted(np.unique(table["ads_url"])):
+    for adskey in sorted(np.unique(table.ads)):
         k, *r = get_entry_online(adskey)
         result[k] = "".join(r)
 
@@ -714,7 +788,7 @@ def all() -> NDArray:
     """
     Return the full raw CRDB database as a table.
     """
-    url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=usine"
+    url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
 
     try:
         context = ssl._create_unverified_context()
@@ -736,14 +810,14 @@ def all() -> NDArray:
 
     blocksize = 1024**2
     nbytes = 0
-    with tempfile.TemporaryFile() as f:
+    with tempfile.TemporaryFile(mode="w+") as f:
         while True:
             chunk = response.read(blocksize)
             nbytes += len(chunk)
             print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
             if not chunk:
                 break
-            f.write(chunk)
+            f.write(chunk.decode())
         print()
         f.flush()
         f.seek(0)

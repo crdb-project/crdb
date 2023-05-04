@@ -686,6 +686,8 @@ def _convert(data: List[str]) -> NDArray:
                 key, pos = key
                 table[idx][key][pos] = val
             else:
+                if key == "is_upper_limit":
+                    val = int(val)
                 table[idx][key] = val
 
     # workaround: replace &amp; in sub_exp strings

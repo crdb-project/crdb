@@ -62,49 +62,48 @@ def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
     result = table.copy()
     for i, t in enumerate(result):
         z, a = ecn.get(t.quantity, (np.nan, np.nan))
-        if t.e_axis == "R":
+        if t.e_type == "R":
             if target == "R":
                 pass
             elif target == "EK":
                 _convert_energy(result, i, z)
-                result[i].e_axis = target
+                result[i].e_type = target
             elif target == "EKN":
                 _convert_energy(result, i, z / a)
-                result[i].e_axis = target
+                result[i].e_type = target
             else:
                 assert False
-        elif t.e_axis == "EK":
+        elif t.e_type == "EK":
             if target == "R":
                 _convert_energy(result, i, 1 / z)
-                result[i].e_axis = target
+                result[i].e_type = target
             elif target == "EK":
                 pass
             elif target == "EKN":
                 _convert_energy(result, i, 1 / a)
-                result[i].e_axis = target
+                result[i].e_type = target
             else:
                 assert False
-        elif t.e_axis == "EKN":
+        elif t.e_type == "EKN":
             if target == "R":
                 _convert_energy(result, i, a / z)
-                result[i].e_axis = target
+                result[i].e_type = target
             elif target == "EK":
                 _convert_energy(result, i, a)
-                result[i].e_axis = target
+                result[i].e_type = target
             elif target == "EKN":
                 pass
             else:
                 assert False
 
-    return result[~np.isnan(result.value) & (result.e_axis == target)]
+    return result[~np.isnan(result.value) & (result.e_type == target)]
 
 
 def _convert_energy(tab, mask, f):
-    tab[mask].e_mean *= f
-    tab[mask].e_low *= f
-    tab[mask].e_high *= f
+    if np.ndim(f) > 0:
+        f.shape = (len(f), 1)
+    tab[mask].e *= f
+    tab[mask].e_bin *= f
     tab[mask].value /= f
-    tab[mask].err_stat_minus /= f
-    tab[mask].err_stat_plus /= f
-    tab[mask].err_sys_minus /= f
-    tab[mask].err_sys_plus /= f
+    tab[mask].err_sta /= f
+    tab[mask].err_sys /= f

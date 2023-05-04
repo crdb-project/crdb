@@ -20,11 +20,11 @@ def draw_table(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     sys_lw : float, optional
         Line width for the error bar that represents systematic uncertainties.
     """
-    x = table.e_mean
+    x = table.e
     y = table.value * factor
-    ye1 = table.err_stat_minus * factor, table.err_stat_plus * factor
-    ye2 = table.err_sys_minus * factor, table.err_sys_plus * factor
-    lines = plt.errorbar(table.e_mean, y, ye1, ls="none", label=label, **kwargs)[0]
+    ye1 = np.transpose(table.err_sta) * factor
+    ye2 = np.transpose(table.err_sys) * factor
+    lines = plt.errorbar(x, y, ye1, ls="none", label=label, **kwargs)[0]
     for key in ("color", "alpha", "lw", "marker"):
         if key in kwargs:
             del kwargs[key]
@@ -66,7 +66,7 @@ def draw_references(
     import matplotlib.legend as mlegend
     from matplotlib.patches import Patch
 
-    refs = np.sort(np.unique(table.ads_url))
+    refs = np.sort(np.unique(table.ads))
 
     ax = plt.gca()
     leg = mlegend.Legend(

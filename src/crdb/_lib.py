@@ -810,14 +810,14 @@ def all() -> NDArray:
 
     blocksize = 1024**2
     nbytes = 0
-    with tempfile.TemporaryFile() as f:
+    with tempfile.TemporaryFile(mode="w+") as f:
         while True:
             chunk = response.read(blocksize)
             nbytes += len(chunk)
             print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
             if not chunk:
                 break
-            f.write(chunk)
+            f.write(chunk.decode())
         print()
         f.flush()
         f.seek(0)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import datetime
 import re
 import ssl
@@ -462,7 +463,7 @@ def query(
         time_start=time_start,
         time_stop=time_stop,
         time_series=time_series,
-        format="csv",
+        format="csv-asimport",
         modulation=modulation,
         server_url=server_url,
     )
@@ -599,86 +600,121 @@ def _convert(data: List[str]) -> NDArray:
 
     # Use this for csv-asimport or csv-extended when it becomes available
     # fields set to None here are skipped during parsing
-    # fields = [
-    #     ("exp", "U64"),  # EXP-NAME
-    #     ("exp_type", "U16"),  # EXP-TYPE
-    #     None,  # EXP-HTML
-    #     None,  # EXP-STARTYEAR
-    #     ("sub_exp", "U100"),  # SUBEXP-NAME
-    #     None,  # SUBEXP-DESCRIPTION
-    #     ("e_relerr", "f8"),  # SUBEXP-ESCALE_RELERR
-    #     None,  # SUBEXP-INFO
-    #     ("distance", "f8"),  # SUBEXP-DISTANCE
-    #     ("datetime", "U64"),  # SUBEXP-DATES
-    #     ("ads", "U32"),  # PUBLI-HTML
-    #     None,  # PUBLI-DATAORIGIN
-    #     ("quantity", "U32"),  # DATA-QTY
-    #     ("e_axis", "U4"),  # DATA-EAXIS
-    #     ("e_mean", "f8"),  # DATA-E_MEAN
-    #     ("e_low", "f8"),  #  DATA-E_BIN_L
-    #     ("e_high", "f8"),  # DATA-E_BIN_U
-    #     ("value", "f8"),  # DATA-VAL
-    #     ("err_stat_minus", "f8"),  # DATA-VAL_ERRSTAT_L
-    #     ("err_stat_plus", "f8"),  # DATA-VAL_ERRSTAT_U
-    #     ("err_sys_minus", "f8"),  # DATA-VAL_ERRSYST_L
-    #     ("err_sys_plus", "f8"),  # DATA-VAL_ERRSYST_U
-    #     ("is_upper_limit", "?"),  # DATA-ISUPPERLIM
-    #     # ("phi", "f8"),
-    # ]
-
     fields = [
-        ("quantity", "U32"),  # DATA-QTY
+        ("exp", "U64"),  # EXP-NAME
+        ("exp_type", "U16"),  # EXP-TYPE
+        None,  # EXP-HTML
+        None,  # EXP-STARTYEAR
         ("sub_exp", "U100"),  # SUBEXP-NAME
+        None,  # SUBEXP-DESCRIPTION
+        ("e_relerr", "f8"),  # SUBEXP-ESCALE_RELERR
+        None,  # SUBEXP-INFO
+        ("distance", "f8"),  # SUBEXP-DISTANCE
+        ("datetime", "U256"),  # SUBEXP-DATES
+        ("ads", "U32"),  # PUBLI-HTML
+        None,  # PUBLI-DATAORIGIN
+        ("quantity", "U32"),  # DATA-QTY
         ("e_type", "U4"),  # DATA-EAXIS
         ("e", "f8"),  # DATA-E_MEAN
-        ("e_bin", "f8", (2,)),  # EBIN_LOW, EBIN_HIGH
-        ("value", "f8"),  # QUANTITY VALUE
-        ("err_sta", "f8", (2,)),  # ERR_STAT-,  ERR_STAT+
-        ("err_sys", "f8", (2,)),  # ERR_SYST-, ERR_SYST+
-        ("ads", "U32"),  # ADS URL FOR PAPER REF
+        ("e_bin", "f8", (2,)),  # DATA-E_BIN_L, DATA-E_BIN_U
+        ("value", "f8"),  # DATA-VAL
+        ("err_sta", "f8", (2,)),  # DATA-VAL_ERRSTAT_L, DATA-VAL_ERRSTAT_U
+        ("err_sys", "f8", (2,)),  # DATA-VAL_ERRSYST_L, DATA-VAL_ERRSYST_U
+        ("is_upper_limit", "?"),  # DATA-ISUPPERLIM
         ("phi", "f8"),  # phi [MV]
-        ("distance", "f8"),  # DISTANCE [AU]
-        ("datetime", "U256"),  # DATIMES
-        ("is_upper_limit", "?"),  # IS UPPER LIMIT
     ]
 
     mapping = []
     for f in fields:
         if f is None:
             mapping.append(None)
-        if len(f) == 3:
+        elif len(f) == 3:
             for k in range(f[2][0]):
                 mapping.append((f[0], k))
         else:
             mapping.append(f[0])
     fields = [x for x in fields if x is not None]
 
-    # workaround for invalid CSV format,
-    # to be replaced by standard parser
-    data2 = []
-    for iline, line in enumerate(data):
-        try:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            items = []
-            inquote = False
-            start = 0
-            for i, c in enumerate(line):
-                if c == '"':
-                    if inquote:
-                        items.append(line[start + 1 : i])
-                    else:
-                        start = i
-                    inquote = not inquote
-            data2.append(items)
-        except ValueError as e:
-            msg = f"{e.args[0]}\nCould not parse line {iline} {line}"
-            e.args = (msg,)
-            raise
+    for start, line in enumerate(data):
+        if not line.startswith("#"):
+            break
 
-    table = np.recarray(len(data2), fields)
-    for idx, row in enumerate(data2):
+    table = np.recarray(len(data) - start - 1, fields)
+    for idx, row in enumerate(csv.reader(data[start:-1])):
+        for val, key in zip(row, mapping):
+            if key is None:
+                continue
+            if isinstance(key, tuple):
+                key, pos = key
+                table[idx][key][pos] = val
+            else:
+                if key == "is_upper_limit":
+                    val = int(val)
+                table[idx][key] = val
+
+    # workaround: replace &amp; in sub_exp strings
+    sub_exps = np.unique(table["sub_exp"])
+    code = "&amp;"
+    for sub_exp in sub_exps:
+        if code not in sub_exp:
+            continue
+        mask = table["sub_exp"] == sub_exp
+        table["sub_exp"][mask] = sub_exp.replace(code, "&")
+
+    # workaround: err_stat_minus or err_sys_minus may be negative
+    for x in ("sta", "sys"):
+        field = f"err_{x}"
+        table[field] = np.abs(table[field])
+
+    return table
+
+
+def _convert_csv(data: List[str]) -> NDArray:
+    # convert text to numpy record array
+
+    # Use this for csv-asimport or csv-extended when it becomes available
+    # fields set to None here are skipped during parsing
+    fields = [
+        ("exp", "U64"),  # EXP-NAME
+        ("exp_type", "U16"),  # EXP-TYPE
+        None,  # EXP-HTML
+        None,  # EXP-STARTYEAR
+        ("sub_exp", "U100"),  # SUBEXP-NAME
+        None,  # SUBEXP-DESCRIPTION
+        ("e_relerr", "f8"),  # SUBEXP-ESCALE_RELERR
+        None,  # SUBEXP-INFO
+        ("distance", "f8"),  # SUBEXP-DISTANCE
+        ("datetime", "U256"),  # SUBEXP-DATES
+        ("ads", "U32"),  # PUBLI-HTML
+        None,  # PUBLI-DATAORIGIN
+        ("quantity", "U32"),  # DATA-QTY
+        ("e_type", "U4"),  # DATA-EAXIS
+        ("e", "f8"),  # DATA-E_MEAN
+        ("e_bin", "f8", (2,)),  # DATA-E_BIN_L, DATA-E_BIN_U
+        ("value", "f8"),  # DATA-VAL
+        ("err_sta", "f8", (2,)),  # DATA-VAL_ERRSTAT_L, DATA-VAL_ERRSTAT_U
+        ("err_sys", "f8", (2,)),  # DATA-VAL_ERRSYST_L, DATA-VAL_ERRSYST_U
+        ("is_upper_limit", "?"),  # DATA-ISUPPERLIM
+        ("phi", "f8"),  # phi [MV]
+    ]
+
+    mapping = []
+    for f in fields:
+        if f is None:
+            mapping.append(None)
+        elif len(f) == 3:
+            for k in range(f[2][0]):
+                mapping.append((f[0], k))
+        else:
+            mapping.append(f[0])
+    fields = [x for x in fields if x is not None]
+
+    for start, line in enumerate(data):
+        if not line.startswith("#"):
+            break
+
+    table = np.recarray(len(data) - start - 1, fields)
+    for idx, row in enumerate(csv.reader(data[start:-1])):
         for val, key in zip(row, mapping):
             if key is None:
                 continue
@@ -753,6 +789,7 @@ def clear_cache() -> None:
     Delete the local CRDB cache.
     """
     _server_request.clear_cache()
+    _all_request.clear_cache()
 
 
 def reference_urls(table: NDArray) -> List[str]:
@@ -786,10 +823,8 @@ def bibliography(table: NDArray) -> Dict[str, str]:
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def all() -> NDArray:
-    """
-    Return the full raw CRDB database as a table.
-    """
+def _all_request():
+    # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
 
     try:
@@ -825,7 +860,18 @@ def all() -> NDArray:
         f.seek(0)
         data = f.readlines()
 
-    return _convert(data)
+    if not data:
+        raise ValueError("empty server response")
+
+    return data
+
+
+def all() -> NDArray:
+    """
+    Return the full raw CRDB database as a table.
+    """
+    data = _all_request()
+    return _convert_csv(data)
 
 
 def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:

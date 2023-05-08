@@ -1,3 +1,7 @@
+"""Helper functions to draw plots from tables with matplotlib."""
+
+import warnings
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +29,90 @@ def draw_table(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     ye1 = np.transpose(table.err_sta) * factor
     ye2 = np.transpose(table.err_sys) * factor
     lines = plt.errorbar(x, y, ye1, ls="none", label=label, **kwargs)[0]
+    for key in ("color", "alpha", "lw", "marker"):
+        if key in kwargs:
+            del kwargs[key]
+    plt.errorbar(
+        x,
+        y,
+        ye2,
+        marker="none",
+        ls="none",
+        lw=sys_lw,
+        color=lines.get_color(),
+        alpha=0.5,
+        **kwargs,
+    )
+    return lines
+
+
+def get_mean_datetime(timerange):
+    """
+    Return the average time for a given time range.
+
+    Parameters
+    ----------
+    timerange : string
+        CRDB time range in "YYYY/MM/DD-HHMMSS:YYYY/MM/DD-HHMMSS" format.
+
+    Returns
+    -------
+    Datetime
+        Center of the time range.
+
+    Raises
+    ------
+    ValueError
+        Raised if the argument contains multiple time ranges.
+    """
+    if ";" in timerange:
+        raise ValueError("argument contains multiple time ranges")
+
+    s1, s2 = timerange.split(":")
+    dt1 = datetime.strptime(s1, "%Y/%m/%d-%H%M%S")
+    dt2 = datetime.strptime(s2, "%Y/%m/%d-%H%M%S")
+    return dt1 + (dt2 - dt1) / 2, (dt2 - dt1)/2
+
+
+def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
+    """
+    Draw table as a time series with statistical and systematic error bars.
+
+    Parameters
+    ----------
+    table : array
+        CRDB table.
+    factor : array-like, optional
+        Optional scaling factor for the y-coordinates. Default is 1.
+    label : str, optional
+        Optional label for the plot.
+    sys_lw : float, optional
+        Line width for the error bar that represents systematic uncertainties.
+    """
+    mask = []
+    x = []
+    xrange = []
+    for dt in table.datetime:
+        if ";" in dt:
+            mask.append(False)
+        else:
+            mask.append(True)
+            x1, x2 = get_mean_datetime(dt)
+            x.append(x1)
+            xrange.append(x2)
+    mask = np.array(mask)
+    n_invalid = np.sum(~mask)
+    if n_invalid:
+        msg = (
+            f"input contains {n_invalid} points with multiple time ranges, "
+            "which are ignored"
+        )
+        warnings.warn(msg, RuntimeWarning)
+        table = table[mask]
+    y = table.value * factor
+    ye1 = np.transpose(table.err_sta) * factor
+    ye2 = np.transpose(table.err_sys) * factor
+    lines = plt.errorbar(x, y, ye1, xerr=xrange, ls="none", label=label, **kwargs)[0]
     for key in ("color", "alpha", "lw", "marker"):
         if key in kwargs:
             del kwargs[key]

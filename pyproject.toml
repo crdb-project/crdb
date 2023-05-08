@@ -68,9 +68,20 @@ ignore_missing_imports = true
 show_error_codes = true
 
 [tool.black]
-line-length = 90
 target-version = ['py38']
 skip-string-normalization = true
+
+[tool.ruff]
+select = ["E", "F", "D"]
+extend-ignore = ["D203", "D212"]
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.per-file-ignores]
+"test_*.py" = ["B", "D"]
+"docs/*.py" = ["D"]
+"setup.py" = ["D"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

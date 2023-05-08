@@ -411,8 +411,8 @@ def query(
         (from the same sub-exp at the same energy) that match quantities in list (e.g.
         compute B/C from native B and C). Three levels of combos are enabled: 0 (native
         data only, no combo), 1 (exact combos), or 2 (exact and approximate combos): in
-        level 1, the mean energy (or energy bin) of the two quantities must be within 5%,
-        whereas for level 2, it must be within 20%.
+        level 1, the mean energy (or energy bin) of the two quantities must be within
+        5%, whereas for level 2, it must be within 20%.
     energy_convert_level: int, optional
         One of 0, 1, 2. Default is 1. Add data obtained from an exact or approximate
         energy_type conversion (from native to queried). Three levels of conversion are
@@ -445,7 +445,6 @@ def query(
 
     Returns
     -------
-
     numpy record array with the database content
 
     Energies are in GeV or GV. Solar modulation values are in MV. Distances are in
@@ -453,7 +452,6 @@ def query(
 
     Raises
     ------
-
     ValueError
         An invalid parameter value triggers a ValueError.
 
@@ -462,7 +460,6 @@ def query(
 
     Notes
     -----
-
     This function caches identical queries for 30 days. If you need to reset the cache,
     do::
 
@@ -536,10 +533,7 @@ def _url(
     modulation: str = "",
     server_url: str = "http://lpsc.in2p3.fr/crdb",
 ):
-    """
-    Build a query URL for the CRDB server.
-    """
-
+    """Build a query URL for the CRDB server."""
     num, *rest = quantity.split("/")
     if len(rest) > 1:
         raise ValueError("ratio contains more than one / operator")
@@ -725,17 +719,13 @@ def experiment_masks(
 
 
 def clear_cache() -> None:
-    """
-    Delete the local CRDB cache.
-    """
+    """Delete the local CRDB cache."""
     _server_request.clear_cache()
     _all_request.clear_cache()
 
 
 def reference_urls(table: NDArray) -> List[str]:
-    """
-    Return list of URLs to entries in the ADSABS database for datasets in table.
-    """
+    """Return list of URLs to entries in the ADSABS database for datasets in table."""
     result = []
     for key in sorted(np.unique(table.ads)):
         result.append(f"https://ui.adsabs.harvard.edu/abs/{key}")

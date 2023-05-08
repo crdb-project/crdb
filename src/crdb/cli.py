@@ -1,3 +1,4 @@
+"""Command line interface for CRDB."""
 import argparse
 import inspect
 import re

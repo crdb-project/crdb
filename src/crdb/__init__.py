@@ -1,3 +1,5 @@
+"""CRDB Python frontend."""
+
 from importlib.metadata import version
 
 from crdb._lib import COMBINE

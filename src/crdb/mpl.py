@@ -5,10 +5,18 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Tuple
 import numpy as np
+from typing import Optional, Any
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 
 
-def draw_table(table: np.recarray, factor=1.0, label=None, sys_lw=5, **kwargs):
+def draw_table(
+    table: np.recarray,
+    factor: float = 1.0,
+    label: Optional[str] = None,
+    sys_lw: float = 5,
+    **kwargs: Any,
+) -> Line2D:
     """
     Draw table with statistical and systematic error bars.
 
@@ -73,7 +81,13 @@ def get_mean_datetime(timerange: str) -> Tuple[datetime, timedelta]:
     return dt1 + (dt2 - dt1) / 2, (dt2 - dt1) / 2
 
 
-def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
+def draw_timeseries(
+    table: np.recarray,
+    factor: float = 1.0,
+    label: Optional[str] = None,
+    sys_lw: float = 5,
+    **kwargs: Any,
+) -> Line2D:
     """
     Draw table as a time series with statistical and systematic error bars.
 
@@ -133,8 +147,8 @@ def draw_references(
     table: np.recarray,
     color: str = "0.5",
     fontsize: str = "xx-small",
-    **kwargs,
-):
+    **kwargs: Any,
+) -> None:
     """
     List references for table in columns using a modified Legend artist.
 
@@ -173,7 +187,9 @@ def draw_references(
     plt.gcf().add_artist(leg)
 
 
-def draw_logo(x, y, height=0.1, zorder=None):
+def draw_logo(
+    x: float, y: float, height: float = 0.1, zorder: Optional[int] = None
+) -> None:
     """
     Draw the CRDB logo.
 

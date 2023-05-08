@@ -4,10 +4,10 @@ Experimental utilitites for the crdb Python package.
 The functions in this module are not stable and their API can
 change at any time. Use with caution.
 """
-from typing import Dict
-from typing import Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from crdb import ELEMENTS
 from crdb import VALID_NAMES
@@ -108,9 +108,11 @@ def convert_energy(
     return result[~np.isnan(result.value) & (result.e_type == target)]
 
 
-def _convert_energy(tab, mask, f):
+def _convert_energy(
+    tab: np.recarray, mask: Union[int, NDArray], f: Union[float, NDArray]
+) -> None:
     if np.ndim(f) > 0:
-        f.shape = (len(f), 1)
+        f.shape = (len(f), 1)  # type:ignore
     tab[mask].e *= f
     tab[mask].e_bin *= f
     tab[mask].value /= f

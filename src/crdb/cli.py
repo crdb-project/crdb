@@ -9,9 +9,10 @@ import crdb
 from crdb._lib import _server_request
 from crdb._lib import _url
 from crdb._lib import query
+from typing import Optional, List
 
 
-def main(args=None):
+def main(args: Optional[List[str]] = None) -> None:
     """
     Command line interface for CRDB.
 
@@ -19,6 +20,7 @@ def main(args=None):
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
 
+    assert isinstance(query.__doc__, str)
     descriptions = {
         k: re.sub(r"\s+", " ", v.strip())
         for (k, v) in re.findall(
@@ -61,7 +63,7 @@ def main(args=None):
     try:
         url = _url(**kwargs)
     except ValueError as e:
-        sys.stderr.write("".join(traceback.format_exception_only(e)))
+        sys.stderr.write("".join(traceback.format_exception_only(e)))  # type:ignore
         sys.exit(1)
     data = _server_request(url, timeout=args.timeout)
     print("\n".join(data))

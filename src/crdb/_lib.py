@@ -390,7 +390,7 @@ def query(
     modulation: str = "",
     timeout: int = 120,
     server_url: str = "http://lpsc.in2p3.fr/crdb",
-):
+) -> np.recarray:
     """
     Query CRDB and return table as a numpy array.
 
@@ -487,7 +487,7 @@ def query(
             )
             for q in quantity
         ]
-        return np.concatenate(results).view(np.recarray)
+        return np.concatenate(results).view(np.recarray)  # type:ignore
 
     url = _url(
         quantity=quantity,
@@ -532,7 +532,7 @@ def _url(
     format: str = "",
     modulation: str = "",
     server_url: str = "http://lpsc.in2p3.fr/crdb",
-):
+) -> str:
     """Build a query URL for the CRDB server."""
     num, *rest = quantity.split("/")
     if len(rest) > 1:
@@ -614,7 +614,7 @@ def _server_request(url: str, timeout: int) -> List[str]:
     try:
         context = ssl._create_unverified_context()
         with rq.urlopen(url, timeout=timeout, context=context) as u:
-            data = u.read().decode("utf-8").split("\n")
+            data: List[str] = u.read().decode("utf-8").split("\n")
         timeout_error = False
     except TimeoutError:
         timeout_error = True
@@ -630,14 +630,18 @@ def _server_request(url: str, timeout: int) -> List[str]:
     return data
 
 
-def _convert_csv(data: List[str], fields) -> NDArray:
+def _convert_csv(
+    data: List[str],
+    fields: Sequence[Union[None, Tuple[str, str], Tuple[str, str, Tuple[int]]]],
+) -> np.recarray:
     # convert text to numpy record array
-    mapping: List[Union[None, float, Tuple[float, int]]] = []
+    mapping: List[Union[None, str, Tuple[str, int]]] = []
     for f in fields:
         if f is None:
             mapping.append(None)
         elif len(f) == 3:
-            for k in range(f[2][0]):
+            (n,) = f[2]  # type:ignore
+            for k in range(n):
                 mapping.append((f[0], k))
         else:
             mapping.append(f[0])
@@ -754,7 +758,7 @@ def bibliography(table: np.recarray) -> Dict[str, str]:
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def _all_request():
+def _all_request() -> List[str]:
     # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
 

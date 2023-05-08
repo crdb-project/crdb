@@ -71,7 +71,7 @@ def get_mean_datetime(timerange):
     s1, s2 = timerange.split(":")
     dt1 = datetime.strptime(s1, "%Y/%m/%d-%H%M%S")
     dt2 = datetime.strptime(s2, "%Y/%m/%d-%H%M%S")
-    return dt1 + (dt2 - dt1) / 2
+    return dt1 + (dt2 - dt1) / 2, (dt2 - dt1)/2
 
 
 def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
@@ -91,12 +91,15 @@ def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     """
     mask = []
     x = []
+    xrange = []
     for dt in table.datetime:
         if ";" in dt:
             mask.append(False)
         else:
             mask.append(True)
-            x.append(get_mean_datetime(dt))
+            x1, x2 = get_mean_datetime(dt)
+            x.append(x1)
+            xrange.append(x2)
     mask = np.array(mask)
     n_invalid = np.sum(~mask)
     if n_invalid:
@@ -109,7 +112,7 @@ def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     y = table.value * factor
     ye1 = np.transpose(table.err_sta) * factor
     ye2 = np.transpose(table.err_sys) * factor
-    lines = plt.errorbar(x, y, ye1, ls="none", label=label, **kwargs)[0]
+    lines = plt.errorbar(x, y, ye1, xerr=xrange, ls="none", label=label, **kwargs)[0]
     for key in ("color", "alpha", "lw", "marker"):
         if key in kwargs:
             del kwargs[key]

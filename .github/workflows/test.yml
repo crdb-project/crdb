@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.py }} ${{ matrix.os }} ${{ matrix.arch }}
+    name: ${{ matrix.python }} ${{ matrix.os }} ${{ matrix.python_arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -20,7 +20,7 @@ jobs:
           # - python: 'pypy-3.8'
           #   python_arch: 'x64'
           #   os: 'ubuntu-latest'
-          - python: '3.9'
+          - python: '3.8'
             python_arch: 'x64'
             os: 'windows-latest'
           - python: '3.10'

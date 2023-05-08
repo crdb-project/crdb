@@ -9,26 +9,26 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.python }} ${{ matrix.os }} ${{ matrix.python_arch }}
+    name: ${{ matrix.python }} ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Broken for some reason not related to us
-          # - python: 'pypy-3.8'
-          #   python_arch: 'x64'
-          #   os: 'ubuntu-latest'
           - python: '3.8'
-            python_arch: 'x64'
+            arch: 'x64'
             os: 'windows-latest'
           - python: '3.10'
-            python_arch: 'x64'
+            arch: 'x64'
             os: 'macos-latest'
           - python: '3.11'
-            python_arch: 'x64'
+            arch: 'x64'
             os: 'ubuntu-latest'
+        # Broken for some reason not related to us
+        # - python: 'pypy-3.8'
+        #   arch: 'x64'
+        #   os: 'ubuntu-latest'
     steps:
     - uses: actions/checkout@v3
       with:
@@ -40,6 +40,6 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
-        architecture: ${{ matrix.python_arch }}
+        architecture: ${{ matrix.arch }}
     - run: python -m pip install --progress-bar=off --prefer-binary -e .[test]
     - run: python -m pytest

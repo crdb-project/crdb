@@ -33,6 +33,10 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+    - uses: actions/cache@v3
+      with:
+        path: ~/.cachier
+        key: ${{ runner.os }}-cachier
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}

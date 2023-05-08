@@ -6,9 +6,9 @@ import sys
 import traceback
 
 import crdb
-from crdb._lib import _server_request
-from crdb._lib import _url
-from crdb._lib import query
+from crdb.core import _server_request
+from crdb.core import _url
+from crdb.core import query
 from typing import Optional, List
 
 

@@ -70,5 +70,5 @@ docs/_build
 .appveyor.token
 *.bak
 
-# Mypy Cache
 .mypy_cache/
+.ruff_cache/

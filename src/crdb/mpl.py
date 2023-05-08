@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Optional
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
-from crdb._lib import get_mean_datetime
+from crdb.core import get_mean_datetime
 
 
 def draw_table(

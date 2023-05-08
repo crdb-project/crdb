@@ -31,15 +31,11 @@ def energy_conversion_numbers() -> Dict[str, Tuple[int, float]]:
     result = {k: (1, np.nan) for k in ("e-", "e+", "e-+e+")}
     for key, z in ELEMENTS.items():
         if key in comp:
-            asum = 0.0
-            wsum = 0.0
-            for a, w in comp[key]:
-                asum += a * w
-                wsum += w
-            a = asum / wsum
+            a, w = np.transpose(comp[key])
+            a_mean = np.average(a, weights=w)
         else:
-            a = np.nan
-        result[key] = (z, a)
+            a_mean = np.nan
+        result[key] = (z, a_mean)
 
     for key in VALID_NAMES:
         if key.endswith("-bar") and key[:-4] in result:

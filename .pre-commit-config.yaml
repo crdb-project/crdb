@@ -10,16 +10,13 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: debug-statements
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
       - id: black
-  # Ruff linter, replacement for flake8 and pydocstyle
+  # Ruff linter; replaces flake8, pydocstyle, isort
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: 'v0.0.263'
     hooks:
       - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]

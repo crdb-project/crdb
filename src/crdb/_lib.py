@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-import datetime
+from datetime import datetime, timedelta
 import re
 import ssl
 import tempfile
@@ -607,7 +607,7 @@ def _url(
     )
 
 
-@cachier.cachier(stale_after=datetime.timedelta(days=30))
+@cachier.cachier(stale_after=timedelta(days=30))
 def _server_request(url: str, timeout: int) -> List[str]:
     # if there is a timeout error, we hide original long traceback from the internal
     # libs and instead show a simple traceback
@@ -680,6 +680,34 @@ def _convert_csv(
         table[field] = np.abs(table[field])
 
     return table
+
+
+def get_mean_datetime(timerange: str) -> Tuple[datetime, timedelta]:
+    """
+    Return the average time for a given time range.
+
+    Parameters
+    ----------
+    timerange : string
+        CRDB time range in "YYYY/MM/DD-HHMMSS:YYYY/MM/DD-HHMMSS" format.
+
+    Returns
+    -------
+    Datetime
+        Center of the time range.
+
+    Raises
+    ------
+    ValueError
+        Raised if the argument contains multiple time ranges.
+    """
+    if ";" in timerange:
+        raise ValueError("argument contains multiple time ranges")
+
+    s1, s2 = timerange.split(":")
+    dt1 = datetime.strptime(s1, "%Y/%m/%d-%H%M%S")
+    dt2 = datetime.strptime(s2, "%Y/%m/%d-%H%M%S")
+    return dt1 + (dt2 - dt1) / 2, (dt2 - dt1) / 2
 
 
 def experiment_masks(
@@ -757,7 +785,7 @@ def bibliography(table: np.recarray) -> Dict[str, str]:
     return result
 
 
-@cachier.cachier(stale_after=datetime.timedelta(days=30))
+@cachier.cachier(stale_after=timedelta(days=30))
 def _all_request() -> List[str]:
     # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"

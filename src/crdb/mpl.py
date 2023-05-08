@@ -1,13 +1,12 @@
 """Helper functions to draw plots from tables with matplotlib."""
 
 import warnings
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Tuple
 import numpy as np
-from typing import Optional, Any
+from typing import Any, Optional
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
+from crdb._lib import get_mean_datetime
 
 
 def draw_table(
@@ -51,34 +50,6 @@ def draw_table(
         **kwargs,
     )
     return lines
-
-
-def get_mean_datetime(timerange: str) -> Tuple[datetime, timedelta]:
-    """
-    Return the average time for a given time range.
-
-    Parameters
-    ----------
-    timerange : string
-        CRDB time range in "YYYY/MM/DD-HHMMSS:YYYY/MM/DD-HHMMSS" format.
-
-    Returns
-    -------
-    Datetime
-        Center of the time range.
-
-    Raises
-    ------
-    ValueError
-        Raised if the argument contains multiple time ranges.
-    """
-    if ";" in timerange:
-        raise ValueError("argument contains multiple time ranges")
-
-    s1, s2 = timerange.split(":")
-    dt1 = datetime.strptime(s1, "%Y/%m/%d-%H%M%S")
-    dt2 = datetime.strptime(s2, "%Y/%m/%d-%H%M%S")
-    return dt1 + (dt2 - dt1) / 2, (dt2 - dt1) / 2
 
 
 def draw_timeseries(

@@ -27,9 +27,10 @@ def main(args: Optional[List[str]] = None) -> None:
             r"^ {4}([a-z_]+): *[a-z, ]+\n((?: {8}.+\n)+)", query.__doc__, re.MULTILINE
         )
     }
-    descriptions[
-        "format"
-    ] = "Output format; one of 'usine', 'galprop', 'csv'. Default is 'usine'."
+    descriptions["format"] = (
+        "Output format; one of 'usine', 'galprop', 'csv', 'csv-asimport'. "
+        "Default is 'csv-asimport'."
+    )
 
     for name, par in inspect.signature(_url).parameters.items():
         name2 = name.replace("_", "-")

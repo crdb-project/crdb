@@ -390,7 +390,7 @@ def query(
     modulation: str = "",
     timeout: int = 120,
     server_url: str = "http://lpsc.in2p3.fr/crdb",
-):
+) -> np.recarray:
     """
     Query CRDB and return table as a numpy array.
 
@@ -487,7 +487,7 @@ def query(
             )
             for q in quantity
         ]
-        return np.concatenate(results).view(np.recarray)
+        return np.concatenate(results).view(np.recarray)  # type:ignore
 
     url = _url(
         quantity=quantity,
@@ -532,7 +532,7 @@ def _url(
     format: str = "",
     modulation: str = "",
     server_url: str = "http://lpsc.in2p3.fr/crdb",
-):
+) -> str:
     """Build a query URL for the CRDB server."""
     num, *rest = quantity.split("/")
     if len(rest) > 1:
@@ -573,7 +573,7 @@ def _url(
         raise ValueError(f"invalid modulation {modulation}")
 
     # do the query
-    kwargs = {
+    kwargs: Dict[str, Union[str, float, int]] = {
         "num": num,
         "energy_type": energy_type.upper(),
     }
@@ -614,7 +614,7 @@ def _server_request(url: str, timeout: int) -> List[str]:
     try:
         context = ssl._create_unverified_context()
         with rq.urlopen(url, timeout=timeout, context=context) as u:
-            data = u.read().decode("utf-8").split("\n")
+            data: List[str] = u.read().decode("utf-8").split("\n")
         timeout_error = False
     except TimeoutError:
         timeout_error = True
@@ -630,14 +630,18 @@ def _server_request(url: str, timeout: int) -> List[str]:
     return data
 
 
-def _convert_csv(data: List[str], fields) -> NDArray:
+def _convert_csv(
+    data: List[str],
+    fields: Sequence[Union[None, Tuple[str, str], Tuple[str, str, Tuple[int]]]],
+) -> np.recarray:
     # convert text to numpy record array
-    mapping = []
+    mapping: List[Union[None, str, Tuple[str, int]]] = []
     for f in fields:
         if f is None:
             mapping.append(None)
         elif len(f) == 3:
-            for k in range(f[2][0]):
+            (n,) = f[2]  # type:ignore
+            for k in range(n):
                 mapping.append((f[0], k))
         else:
             mapping.append(f[0])
@@ -649,6 +653,7 @@ def _convert_csv(data: List[str], fields) -> NDArray:
 
     table = np.recarray(len(data) - start - 1, fields)
     for idx, row in enumerate(csv.reader(data[start:-1])):
+        val: Union[str, int]
         for val, key in zip(row, mapping):
             if key is None:
                 continue
@@ -678,7 +683,7 @@ def _convert_csv(data: List[str], fields) -> NDArray:
 
 
 def experiment_masks(
-    table: NDArray, combine: Sequence[str] = COMBINE
+    table: np.recarray, combine: Sequence[str] = COMBINE
 ) -> Dict[str, NDArray]:
     """
     Generate masks which select all points from each experiment.
@@ -724,7 +729,7 @@ def clear_cache() -> None:
     _all_request.clear_cache()
 
 
-def reference_urls(table: NDArray) -> List[str]:
+def reference_urls(table: np.recarray) -> List[str]:
     """Return list of URLs to entries in the ADSABS database for datasets in table."""
     result = []
     for key in sorted(np.unique(table.ads)):
@@ -732,7 +737,7 @@ def reference_urls(table: NDArray) -> List[str]:
     return result
 
 
-def bibliography(table: NDArray) -> Dict[str, str]:
+def bibliography(table: np.recarray) -> Dict[str, str]:
     """
     Return dictionary that maps ADSABS keys in table to BibTex entries.
 
@@ -753,7 +758,7 @@ def bibliography(table: NDArray) -> Dict[str, str]:
 
 
 @cachier.cachier(stale_after=datetime.timedelta(days=30))
-def _all_request():
+def _all_request() -> List[str]:
     # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
 
@@ -797,9 +802,7 @@ def _all_request():
 
 
 def all() -> NDArray:
-    """
-    Return the full raw CRDB database as a table.
-    """
+    """Return the full raw CRDB database as a table."""
     data = _all_request()
     return _convert_csv(data, _CSV_FIELDS)
 
@@ -818,7 +821,7 @@ def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
     described by the tuple (A, F), where A is the number of nucleons, and F is the
     abundance in arbitrary units.
     """
-    result = {}
+    result: Dict[str, List[Tuple[int, float]]] = {}
     with open(Path(__file__).parent / "solarsystem_abundances2003.dat") as f:
         for line in f:
             m = re.match(r"^ *([0-9]+)([A-Za-z]+)\s*[0-9\.]+\s*([0-9\.e]+)", line)
@@ -826,6 +829,6 @@ def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
                 continue
             a = int(m.group(1))
             elem = m.group(2)
-            f = float(m.group(3))
-            result.setdefault(elem, []).append((a, f))
+            abundance = float(m.group(3))
+            result.setdefault(elem, []).append((a, abundance))
     return result

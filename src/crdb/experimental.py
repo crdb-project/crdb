@@ -4,8 +4,7 @@ Experimental utilitites for the crdb Python package.
 The functions in this module are not stable and their API can
 change at any time. Use with caution.
 """
-from typing import Dict
-from typing import Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,30 +17,25 @@ NUCLEON_MASS = 0.9389187543299999  # GeV
 ELECTRON_MASS = 0.51099895e-3  # GeV
 
 
-def energy_conversion_numbers() -> Dict[str, Tuple[float, float]]:
+def energy_conversion_numbers() -> Dict[str, Tuple[int, float]]:
     """
     Return dict with energy conversion numbers.
 
     Returns
     -------
     dict
-        Maps the quantity name to a tuple (A, Z), where A is the number
-        of nucleons and Z is the atomic number. Returns (1, NaN) for
-        electrons and positrons.
+        Maps the quantity name to a tuple (Z, A), where Z is the atomic number and A is
+        the number of nucleons. Returns (1, NaN) for electrons and positrons.
     """
     comp = solar_system_composition()
     result = {k: (1, np.nan) for k in ("e-", "e+", "e-+e+")}
     for key, z in ELEMENTS.items():
         if key in comp:
-            asum = 0
-            wsum = 0
-            for a, w in comp[key]:
-                asum += a * w
-                wsum += w
-            a = asum / wsum
+            a, w = np.transpose(comp[key])
+            a_mean = np.average(a, weights=w)
         else:
-            a = np.nan
-        result[key] = (z, a)
+            a_mean = np.nan
+        result[key] = (z, a_mean)
 
     for key in VALID_NAMES:
         if key.endswith("-bar") and key[:-4] in result:
@@ -50,7 +44,9 @@ def energy_conversion_numbers() -> Dict[str, Tuple[float, float]]:
     return result
 
 
-def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
+def convert_energy(
+    table: np.recarray, target: str = "EKN", approximate: bool = True
+) -> np.recarray:
     """
     Convert e_type of all convertible quantities to target and removes the rest.
 
@@ -112,9 +108,11 @@ def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
     return result[~np.isnan(result.value) & (result.e_type == target)]
 
 
-def _convert_energy(tab, mask, f):
+def _convert_energy(
+    tab: np.recarray, mask: Union[int, NDArray], f: Union[float, NDArray]
+) -> None:
     if np.ndim(f) > 0:
-        f.shape = (len(f), 1)
+        f.shape = (len(f), 1)  # type:ignore
     tab[mask].e *= f
     tab[mask].e_bin *= f
     tab[mask].value /= f

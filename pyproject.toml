@@ -61,11 +61,12 @@ where = ["src"]
 [tool.setuptools_scm]
 
 [tool.mypy]
-strict = true
-no_implicit_optional = false
-allow_redefinition = true
 ignore_missing_imports = true
-show_error_codes = true
+allow_redefinition = true
+files = ["src"]
+plugins = "numpy.typing.mypy_plugin"
+pretty = true
+no_implicit_optional = false
 
 [tool.black]
 target-version = ['py38']

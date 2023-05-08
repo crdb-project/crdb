@@ -8,7 +8,6 @@ from typing import Dict
 from typing import Tuple
 
 import numpy as np
-from numpy.typing import NDArray
 
 from crdb import ELEMENTS
 from crdb import VALID_NAMES
@@ -18,23 +17,22 @@ NUCLEON_MASS = 0.9389187543299999  # GeV
 ELECTRON_MASS = 0.51099895e-3  # GeV
 
 
-def energy_conversion_numbers() -> Dict[str, Tuple[float, float]]:
+def energy_conversion_numbers() -> Dict[str, Tuple[int, float]]:
     """
     Return dict with energy conversion numbers.
 
     Returns
     -------
     dict
-        Maps the quantity name to a tuple (A, Z), where A is the number
-        of nucleons and Z is the atomic number. Returns (1, NaN) for
-        electrons and positrons.
+        Maps the quantity name to a tuple (Z, A), where Z is the atomic number and A is
+        the number of nucleons. Returns (1, NaN) for electrons and positrons.
     """
     comp = solar_system_composition()
     result = {k: (1, np.nan) for k in ("e-", "e+", "e-+e+")}
     for key, z in ELEMENTS.items():
         if key in comp:
-            asum = 0
-            wsum = 0
+            asum = 0.0
+            wsum = 0.0
             for a, w in comp[key]:
                 asum += a * w
                 wsum += w
@@ -50,7 +48,9 @@ def energy_conversion_numbers() -> Dict[str, Tuple[float, float]]:
     return result
 
 
-def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
+def convert_energy(
+    table: np.recarray, target: str = "EKN", approximate: bool = True
+) -> np.recarray:
     """
     Convert e_type of all convertible quantities to target and removes the rest.
 

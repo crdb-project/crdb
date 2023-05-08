@@ -4,6 +4,9 @@ Experimental utilitites for the crdb Python package.
 The functions in this module are not stable and their API can
 change at any time. Use with caution.
 """
+from typing import Dict
+from typing import Tuple
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -15,7 +18,17 @@ NUCLEON_MASS = 0.9389187543299999  # GeV
 ELECTRON_MASS = 0.51099895e-3  # GeV
 
 
-def energy_conversion_numbers():
+def energy_conversion_numbers() -> Dict[str, Tuple[float, float]]:
+    """
+    Return dict with energy conversion numbers.
+
+    Returns
+    -------
+    dict
+        Maps the quantity name to a tuple (A, Z), where A is the number
+        of nucleons and Z is the atomic number. Returns (1, NaN) for
+        electrons and positrons.
+    """
     comp = solar_system_composition()
     result = {k: (1, np.nan) for k in ("e-", "e+", "e-+e+")}
     for key, z in ELEMENTS.items():
@@ -39,7 +52,7 @@ def energy_conversion_numbers():
 
 def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
     """
-    Converts e_axis of all convertible quantities and removes the rest.
+    Convert e_type of all convertible quantities to target and removes the rest.
 
     Parameters
     ----------
@@ -51,7 +64,7 @@ def convert_energy(table: NDArray, target="EKN", approximate=True) -> NDArray:
         Whether approximate conversion is allowed. An approximate conversion
         happens when an elemental flux with an unknown isotopic composition
         is converted and the effective number of nucleons is required.
-        Default is false.
+        Default is true.
 
     Returns
     -------

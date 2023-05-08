@@ -1,7 +1,11 @@
+import numpy as np
 import pytest
 
 from crdb import all
 from crdb import mpl
+
+# These tests are dumb, they check whether functions run,
+# but not the output. Still better than nothing.
 
 
 @pytest.fixture
@@ -21,3 +25,17 @@ def test_draw_table(table):
 
 def test_draw_logo():
     mpl.draw_logo(1, 1)
+
+
+def test_draw_timeseries(table):
+    with pytest.warns(RuntimeWarning, match="input contains"):
+        mpl.draw_timeseries(table)
+
+    mask = []
+    for dt in table.datetime:
+        mask.append(";" not in dt)
+    mask = np.array(mask)
+    tab = table[mask]
+
+    # no warning now
+    mpl.draw_timeseries(tab)

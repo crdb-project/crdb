@@ -1,9 +1,12 @@
+"""Helper functions to draw plots from tables with matplotlib."""
+
+import warnings
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
-from datetime import datetime
 
 
 def draw_table(table, factor=1.0, label=None, sys_lw=5, **kwargs):
@@ -51,11 +54,24 @@ def get_mean_datetime(timerange):
     ----------
     timerange : string
         CRDB time range in "YYYY/MM/DD-HHMMSS:YYYY/MM/DD-HHMMSS" format.
+
+    Returns
+    -------
+    Datetime
+        Center of the time range.
+
+    Raises
+    ------
+    ValueError
+        Raised if the argument contains multiple time ranges.
     """
+    if ";" in timerange:
+        raise ValueError("argument contains multiple time ranges")
+
     s1, s2 = timerange.split(":")
     dt1 = datetime.strptime(s1, "%Y/%m/%d-%H%M%S")
     dt2 = datetime.strptime(s2, "%Y/%m/%d-%H%M%S")
-    return dt1 + (dt2 - dt1)/2
+    return dt1 + (dt2 - dt1) / 2
 
 
 def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
@@ -73,7 +89,23 @@ def draw_timeseries(table, factor=1.0, label=None, sys_lw=5, **kwargs):
     sys_lw : float, optional
         Line width for the error bar that represents systematic uncertainties.
     """
-    x = [get_mean_datetime(time) for time in table.datetime]
+    mask = []
+    x = []
+    for dt in table.datetime:
+        if ";" in dt:
+            mask.append(False)
+        else:
+            mask.append(True)
+            x.append(get_mean_datetime(dt))
+    mask = np.array(mask)
+    n_invalid = np.sum(~mask)
+    if n_invalid:
+        msg = (
+            f"input contains {n_invalid} points with multiple time ranges, "
+            "which are ignored"
+        )
+        warnings.warn(msg, RuntimeWarning)
+        table = table[mask]
     y = table.value * factor
     ye1 = np.transpose(table.err_sta) * factor
     ye2 = np.transpose(table.err_sys) * factor

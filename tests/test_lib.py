@@ -64,6 +64,10 @@ def test_solar_system_composition():
 
 def test_VALID_NAMES():
     tab = all()
-    valid = np.unique(tab.quantity)
-    # print(repr(tuple(sorted(valid))))
-    assert set(valid) == set(VALID_NAMES)
+    valid = set()
+    for q in np.unique(tab.quantity):
+        num, *rest = q.split("/")
+        valid.add(num)
+        if rest:
+            valid.add(rest[0])
+    assert valid == set(VALID_NAMES)

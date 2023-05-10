@@ -1,6 +1,7 @@
 import pytest
-
+import numpy as np
 from crdb import ELEMENTS
+from crdb import VALID_NAMES
 from crdb import all
 from crdb import query
 from crdb import solar_system_composition
@@ -59,3 +60,14 @@ def test_solar_system_composition():
     assert d["H"] == [(1, 2.431e10), (2, 4.716e5)]
     assert d["Li"] == [(6, 4.21), (7, 51.26)]
     assert d["U"] == [(235, 0.000067), (238, 0.009238)]
+
+
+def test_VALID_NAMES():
+    tab = all()
+    valid = set()
+    for q in np.unique(tab.quantity):
+        num, *rest = q.split("/")
+        valid.add(num)
+        if rest:
+            valid.add(rest[0])
+    assert valid == set(VALID_NAMES)

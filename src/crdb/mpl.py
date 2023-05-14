@@ -3,7 +3,7 @@
 import warnings
 from pathlib import Path
 import numpy as np
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from crdb.core import get_mean_datetime
@@ -13,11 +13,15 @@ def draw_table(
     table: np.recarray,
     factor: float = 1.0,
     label: Optional[str] = None,
+    show_bin: bool = False,
+    xunit: float = 1.0,
     sys_lw: float = 5,
     **kwargs: Any,
 ) -> Line2D:
     """
     Draw table with statistical and systematic error bars.
+
+    Supports drawing values and upper limits.
 
     Parameters
     ----------
@@ -27,35 +31,30 @@ def draw_table(
         Optional scaling factor for the y-coordinates. Default is 1.
     label : str, optional
         Optional label for the plot.
+    show_bin : bool, optional
+        If true, show horizontal error bars to indicate the energy bin.
+    xunit: float, optional
+        Use this to change the default scale of the energy axis (GeV or GV). For
+        example, setting xunit = 1e3 produces a plot in TeV or TV. Default is 1.
     sys_lw : float, optional
         Line width for the error bar that represents systematic uncertainties.
+    kwargs :
+        Other keyword arguments are forwarded to matplotlib.pyplot.errorbar.
     """
-    x = table.e
+    x = table.e / xunit
     y = table.value * factor
-    ye1 = np.transpose(table.err_sta) * factor
-    ye2 = np.transpose(table.err_sys) * factor
-    lines = plt.errorbar(x, y, ye1, ls="none", label=label, **kwargs)[0]
-    for key in ("color", "alpha", "lw", "marker"):
-        if key in kwargs:
-            del kwargs[key]
-    plt.errorbar(
-        x,
-        y,
-        ye2,
-        marker="none",
-        ls="none",
-        lw=sys_lw,
-        color=lines.get_color(),
-        alpha=0.5,
-        **kwargs,
-    )
-    return lines
+    ysta = np.transpose(table.err_sta) * factor
+    ysys = np.transpose(table.err_sys) * factor
+    xerr = np.abs(np.transpose(table.e_bin / xunit) - x) if show_bin else None
+    is_ul = table.is_upper_limit
+    return _draw_with_errorbars(x, y, ysta, ysys, xerr, is_ul, label, sys_lw, **kwargs)
 
 
 def draw_timeseries(
     table: np.recarray,
     factor: float = 1.0,
     label: Optional[str] = None,
+    show_bin: bool = False,
     sys_lw: float = 5,
     **kwargs: Any,
 ) -> Line2D:
@@ -70,12 +69,16 @@ def draw_timeseries(
         Optional scaling factor for the y-coordinates. Default is 1.
     label : str, optional
         Optional label for the plot.
+    show_bin : bool, optional
+        If true, show horizontal error bars to indicate the energy bin.
     sys_lw : float, optional
         Line width for the error bar that represents systematic uncertainties.
+    kwargs :
+        Other keyword arguments are forwarded to matplotlib.pyplot.errorbar.
     """
     mask = []
     x = []
-    xrange = []
+    xerr = []
     for dt in table.datetime:
         if ";" in dt:
             mask.append(False)
@@ -83,7 +86,7 @@ def draw_timeseries(
             mask.append(True)
             x1, x2 = get_mean_datetime(dt)
             x.append(x1)
-            xrange.append(x2)
+            xerr.append(x2)
     mask = np.array(mask)
     n_invalid = np.sum(~mask)
     if n_invalid:
@@ -93,31 +96,22 @@ def draw_timeseries(
         )
         warnings.warn(msg, RuntimeWarning)
         table = table[mask]
+    x = np.array(x)
     y = table.value * factor
-    ye1 = np.transpose(table.err_sta) * factor
-    ye2 = np.transpose(table.err_sys) * factor
-    lines = plt.errorbar(x, y, ye1, xerr=xrange, ls="none", label=label, **kwargs)[0]
-    for key in ("color", "alpha", "lw", "marker"):
-        if key in kwargs:
-            del kwargs[key]
-    plt.errorbar(
-        x,
-        y,
-        ye2,
-        marker="none",
-        ls="none",
-        lw=sys_lw,
-        color=lines.get_color(),
-        alpha=0.5,
-        **kwargs,
+    ysta = np.transpose(table.err_sta) * factor
+    ysys = np.transpose(table.err_sys) * factor
+    xerr: np.ndarray = np.transpose(xerr)  # type:ignore
+    is_ul = table.is_upper_limit
+    kwargs["marker"] = "."
+    return _draw_with_errorbars(
+        x, y, ysta, ysys, xerr if show_bin else None, is_ul, label, sys_lw, **kwargs
     )
-    return lines
 
 
 def draw_references(
     table: np.recarray,
     color: str = "0.5",
-    fontsize: str = "xx-small",
+    fontsize: Union[str, int] = "xx-small",
     **kwargs: Any,
 ) -> None:
     """
@@ -132,6 +126,8 @@ def draw_references(
         CRDB table.
     color : str, optional
         Color of the text, default is '0.5'.
+    fontsize: str or int, optional
+        Font size in absolute units (int) or relative units (str).
     kwargs :
         Other keyword arguments are forwarded to matplotlib.legend.Legend.
     """
@@ -185,3 +181,62 @@ def draw_logo(
     iax.set(xticks=[], yticks=[])
     iax.spines[:].set_visible(False)
     iax.imshow(img)
+
+
+def _draw_with_errorbars(
+    x: np.ndarray,
+    y: np.ndarray,
+    ysta: np.ndarray,
+    ysys: np.ndarray,
+    xerr: Optional[np.ndarray],
+    is_ul: np.ndarray,
+    label: Optional[str],
+    sys_lw: float,
+    **kwargs: Any,
+) -> Line2D:
+    for key in ("ls", "linestyle"):
+        if key in kwargs:
+            del kwargs["ls"]
+    if "fmt" in kwargs:
+        raise ValueError("keyword 'fmt' is not allowed, use 'marker' instead")
+    is_pt = ~is_ul
+    lines = None
+    for mask in (is_pt, is_ul):
+        if not np.any(mask):
+            continue
+        xm = x[mask]
+        ym = y[mask]
+        ystam = ysta[:, mask]
+        ysysm = ysys[:, mask]
+        if xerr is None:
+            xerrm = None
+        else:
+            xerrm = xerr[:, mask]
+        if mask is is_ul:
+            ystam = 0.2 * ym
+        lines = plt.errorbar(
+            xm,
+            ym,
+            ystam,
+            xerrm,
+            uplims=mask is is_ul,
+            ls="none",
+            label=label if lines is None else None,
+            **kwargs,
+        )[0]
+        kwargs["color"] = lines.get_color()
+        for key in ("alpha", "lw", "linewidth", "marker"):
+            if key in kwargs:
+                del kwargs[key]
+        if mask is is_pt:
+            plt.errorbar(
+                xm,
+                ym,
+                ysysm,
+                marker="none",
+                ls="none",
+                lw=sys_lw,
+                alpha=0.5,
+                **kwargs,
+            )
+    return lines

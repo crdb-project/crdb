@@ -20,7 +20,14 @@ def test_draw_references(table):
 
 
 def test_draw_table(table):
-    mpl.draw_table(table)
+    assert set(np.unique(table.e_type)) == {"EKN", "R"}
+
+    with pytest.raises(ValueError):
+        # table contains incompatible e_types
+        mpl.draw_table(table)
+
+    table2 = table[table.e_type == "EKN"]
+    mpl.draw_table(table2)
 
 
 def test_draw_logo():

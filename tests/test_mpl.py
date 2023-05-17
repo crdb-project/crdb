@@ -11,8 +11,7 @@ from crdb import mpl
 @pytest.fixture
 def table():
     tab = all()
-    tab = tab[tab.quantity == "Li"]
-    return tab
+    return tab[tab.quantity == "Li"]
 
 
 def test_draw_references(table):

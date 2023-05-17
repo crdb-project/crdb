@@ -5,7 +5,6 @@ import csv
 from datetime import datetime, timedelta
 import re
 import ssl
-import tempfile
 import urllib.request as rq
 from pathlib import Path
 from typing import Dict
@@ -453,6 +452,7 @@ _CSV_ASIMPORT_FIELDS = (
 )
 
 
+@cachier.cachier(stale_after=timedelta(days=30))
 def query(
     quantity: Union[str, Sequence[str]],
     *,
@@ -693,21 +693,49 @@ def _server_request(url: str, timeout: int) -> List[str]:
     # libs and instead show a simple traceback
     try:
         context = ssl._create_unverified_context()
-        with rq.urlopen(url, timeout=timeout, context=context) as u:
-            data: List[str] = u.read().decode("utf-8").split("\n")
-        timeout_error = False
-    except TimeoutError:
-        timeout_error = True
+        response = rq.urlopen(url, context=context)
+        connection_error = False
+    except Exception:
+        import traceback
 
-    if timeout_error:
-        raise TimeoutError(
-            f"server did not respond within timeout={timeout} to url={url}"
+        traceback.print_exc()
+        connection_error = True
+
+    if connection_error:
+        raise ConnectionError(
+            "Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
+            f"browser. If that works, something is wrong with url = '{url}', "
+            "please report this as an issue at "
+            "https://github.com/crdb-project/crdb/issues"
         )
 
-    if not data:
+    blocksize = 1024**2
+    nbytes = 0
+    chunks = []
+    while True:
+        timeout_error = False
+        try:
+            chunk = response.read(blocksize, timeout=timeout).decode("utf-8")
+        except TimeoutError:
+            timeout_error = True
+        if timeout_error:
+            raise TimeoutError(
+                f"server did not respond within timeout={timeout} to url={url}"
+            )
+        nbytes += len(chunk)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        if chunks:  # show progress if there is more than one chunk
+            print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
+    if len(chunks) > 1:
+        print()
+
+    if len(chunks) == 1 and (not chunks[0] or chunks[0].isspace()):
         raise ValueError("empty server response")
 
-    return data
+    s = "".join(chunks)
+    return s.split("\n")
 
 
 def _convert_csv(
@@ -834,8 +862,8 @@ def experiment_masks(
 def clear_cache() -> None:
     """Delete the local CRDB cache."""
     _server_request.clear_cache()
-    _all_request.clear_cache()
     all.clear_cache()
+    query.clear_cache()
 
 
 def reference_urls(table: np.recarray) -> List[str]:
@@ -867,53 +895,11 @@ def bibliography(table: np.recarray) -> Dict[str, str]:
 
 
 @cachier.cachier(stale_after=timedelta(days=30))
-def _all_request() -> List[str]:
-    # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
-    url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
-
-    try:
-        context = ssl._create_unverified_context()
-        response = rq.urlopen(url, context=context)
-        connection_error = False
-    except Exception:
-        import traceback
-
-        traceback.print_exc()
-        connection_error = True
-
-    if connection_error:
-        raise ConnectionError(
-            "Please check if you can connect to https://lpsc.in2p3.fr/crdb with your "
-            f"browser. If that works, something is wrong with url = '{url}', "
-            "please report this as an issue at "
-            "https://github.com/crdb-project/crdb/issues"
-        )
-
-    blocksize = 1024**2
-    nbytes = 0
-    with tempfile.TemporaryFile(mode="w+") as f:
-        while True:
-            chunk = response.read(blocksize)
-            nbytes += len(chunk)
-            print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
-            if not chunk:
-                break
-            f.write(chunk.decode())
-        print()
-        f.flush()
-        f.seek(0)
-        data = f.readlines()
-
-    if not data:
-        raise ValueError("empty server response")
-
-    return data
-
-
-@cachier.cachier(stale_after=timedelta(days=30))
 def all() -> NDArray:
     """Return the full raw CRDB database as a table."""
-    data = _all_request()
+    url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
+    # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
+    data = _server_request(url, timeout=100)
     return _convert_csv(data, _CSV_FIELDS)
 
 

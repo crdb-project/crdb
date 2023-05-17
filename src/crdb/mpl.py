@@ -41,14 +41,16 @@ def draw_table(
     kwargs :
         Other keyword arguments are forwarded to matplotlib.pyplot.errorbar.
     """
-    e_types = set(np.unique(table.e_type))
+    e_types = np.unique(table.e_type)
     if len(e_types) > 1:
-        if e_types != {"EK", "ETOT"}:
-            msg = f"table contains incompatbile e_types {e_types}"
-            raise ValueError(msg)
-        else:
-            msg = f"table contains entries with multiple e_types {e_types}"
+        et = set(e_types)
+        is_warning = et == {"EK", "ETOT"}
+        word = "potentially " if is_warning else ""
+        msg = f"table contains {word}incompatbile e_types {et}"
+        if is_warning:
             warnings.warn(msg, RuntimeWarning)
+        else:
+            raise ValueError(msg)
 
     x = table.e / xunit
     y = table.value * factor

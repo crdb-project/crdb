@@ -43,11 +43,13 @@ def draw_table(
     """
     e_types = set(np.unique(table.e_type))
     if len(e_types) > 1:
-        msg = f"table contains entries with multiple e_type values {e_types}"
-        warnings.warn(msg, RuntimeWarning)
         if e_types != {"EK", "ETOT"}:
             msg = f"table contains incompatbile e_types {e_types}"
             raise ValueError(msg)
+        else:
+            msg = f"table contains entries with multiple e_types {e_types}"
+            warnings.warn(msg, RuntimeWarning)
+
     x = table.e / xunit
     y = table.value * factor
     ysta = np.transpose(table.err_sta) * factor

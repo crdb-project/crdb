@@ -595,7 +595,7 @@ def experiment_masks(
                 break
         else:
             c = key[: key.index("(")]
-            d[key] = c
+            d[key] = c.strip()
 
     result = {}
     for i, t in enumerate(table):

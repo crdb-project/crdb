@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from crdb.core import get_mean_datetime
+from datetime import datetime
 
 
 def draw_table(
@@ -87,26 +88,32 @@ def draw_timeseries(
     kwargs :
         Other keyword arguments are forwarded to matplotlib.pyplot.errorbar.
     """
-    mask = []
+    multiple_ranges = 0
     x = []
     xerr = []
     for dt in table.datetime:
         if ";" in dt:
-            mask.append(False)
+            multiple_ranges += 1
+            x1: Optional[datetime] = None
+            x2: Optional[datetime] = None
+            for dti in dt.split(";"):
+                cx, dx = get_mean_datetime(dti)
+                if x1 is None or cx - dx < x1:
+                    x1 = cx - dx
+                if x2 is None or cx + dx > x2:
+                    x2 = cx + dx
+            dx = (x2 - x1) / 2  # type:ignore
+            cx = x1 + 0.5 * dx  # type:ignore
         else:
-            mask.append(True)
-            x1, x2 = get_mean_datetime(dt)
-            x.append(x1)
-            xerr.append(x2)
-    mask = np.array(mask)
-    n_invalid = np.sum(~mask)
-    if n_invalid:
+            cx, dx = get_mean_datetime(dt)
+        x.append(cx)
+        xerr.append(dx)
+    if multiple_ranges:
         msg = (
-            f"input contains {n_invalid} points with multiple time ranges, "
-            "which are ignored"
+            f"input contains {multiple_ranges} points with multiple time ranges, "
+            "we use minimum and maximum to construct an interval"
         )
         warnings.warn(msg, RuntimeWarning)
-        table = table[mask]
     x = np.array(x)
     y = table.value * factor
     ysta = np.transpose(table.err_sta) * factor
@@ -222,7 +229,7 @@ def _draw_with_errorbars(
         if xerr is None:
             xerrm = None
         else:
-            xerrm = xerr[mask]
+            xerrm = xerr[..., mask]
         if mask is is_ul:
             ystam = 0.2 * ym
         lines = plt.errorbar(

@@ -48,10 +48,5 @@ def test_draw_timeseries(table):
 
 
 def test_draw_timeseries_2(table):
-    mask = []
-    for dt in table.datetime:
-        mask.append(";" not in dt)
-    mask = np.array(mask)
-    tab = table[mask]
-
-    mpl.draw_timeseries(tab, show_bin=True)
+    with pytest.warns(RuntimeWarning, match="input contains"):
+        mpl.draw_timeseries(table, show_bin=True)

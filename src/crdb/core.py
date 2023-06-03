@@ -12,265 +12,11 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+from typing import Set
 
 import cachier
 import numpy as np
 from numpy.typing import NDArray
-
-# generated from np.unqiue(crdb.all().quantity)
-VALID_NAMES = (
-    '10B',
-    '10Be',
-    '11B',
-    '12C',
-    '13C',
-    '14N',
-    '15N',
-    '16O',
-    '17O',
-    '18O',
-    '19F',
-    '1H',
-    '1H-bar',
-    '20Ne',
-    '21Ne',
-    '22Ne',
-    '23Na',
-    '24Mg',
-    '25Mg',
-    '26Al',
-    '26Mg',
-    '27Al',
-    '28Si',
-    '29Si',
-    '2H',
-    '2H-bar',
-    '30Si',
-    '31P',
-    '32S',
-    '33S',
-    '34S',
-    '35Cl',
-    '36Ar',
-    '36Cl',
-    '36S',
-    '37Ar',
-    '37Cl',
-    '38Ar',
-    '39K',
-    '3He',
-    '40Ar',
-    '40Ca',
-    '40K',
-    '41Ca',
-    '41K',
-    '42Ca',
-    '43Ca',
-    '44Ca',
-    '44Ti',
-    '46Ca',
-    '46Ti',
-    '47Ti',
-    '48Ti',
-    '49Ti',
-    '49V',
-    '4He',
-    '50Cr',
-    '50Ti',
-    '50V',
-    '51Cr',
-    '51V',
-    '52Cr',
-    '53Cr',
-    '53Mn',
-    '54Cr',
-    '54Fe',
-    '54Mn',
-    '55Fe',
-    '55Mn',
-    '56Fe',
-    '56Ni',
-    '57Co',
-    '57Fe',
-    '58Fe',
-    '58Ni',
-    '59Co',
-    '59Ni',
-    '60Ni',
-    '61Ni',
-    '62Ni',
-    '63Cu',
-    '64Ni',
-    '64Zn',
-    '65Cu',
-    '66Zn',
-    '67Ga',
-    '67Zn',
-    '68Zn',
-    '69Ga',
-    '6Li',
-    '70Ge',
-    '70Zn',
-    '71Ga',
-    '71Ge',
-    '72Ge',
-    '73As',
-    '73Ge',
-    '74+75+76+77+78Se',
-    '74Ge',
-    '75As',
-    '76Ge',
-    '78+80+81+82Kr',
-    '79Br',
-    '7Be',
-    '7Li',
-    '80+82Se',
-    '81Br',
-    '83+84+86Kr',
-    '84+85+86Sr',
-    '87+88Sr',
-    '9Be',
-    '9Be+10Be',
-    'Ac',
-    'Al',
-    'AllParticles',
-    'Am',
-    'Ar',
-    'As',
-    'At',
-    'Au',
-    'B',
-    'Ba',
-    'Be',
-    'Bi',
-    'Bk',
-    'Br',
-    'C',
-    'C-Fe-group',
-    'C-bar',
-    'C-group',
-    'Ca',
-    'Cd',
-    'Ce',
-    'Cl',
-    'Cm',
-    'Co',
-    'Cr',
-    'Cs',
-    'Cu',
-    'DipoleAmplitude',
-    'DipolePhase',
-    'Dy',
-    'Er',
-    'Eu',
-    'F',
-    'Fe',
-    'Fe-group',
-    'Fr',
-    'Ga',
-    'Gd',
-    'Ge',
-    'H',
-    'H-He-group',
-    'He',
-    'He-C-group',
-    'He-bar',
-    'Hf',
-    'Hg',
-    'Ho',
-    'Ir',
-    'K',
-    'Kr',
-    'La',
-    'Li',
-    'Lu',
-    'Mg',
-    'Mn',
-    'Mo',
-    'N',
-    'N-group',
-    'Na',
-    'Nb',
-    'Nd',
-    'Ne',
-    'Ni',
-    'Np',
-    'O',
-    'O-group',
-    'Os',
-    'P',
-    'Pa',
-    'Pb',
-    'Pm',
-    'Po',
-    'Pr',
-    'Pt',
-    'Pu',
-    'Ra',
-    'Rb',
-    'Re',
-    'Rn',
-    'Ru',
-    'S',
-    'Sc',
-    'Se',
-    'Si',
-    'Si-Fe-group',
-    'Si-group',
-    'Sm',
-    'Sn',
-    'Sr',
-    'SubFe',
-    'Ta',
-    'Tb',
-    'Te',
-    'Th',
-    'Ti',
-    'Tl',
-    'Tm',
-    'U',
-    'V',
-    'W',
-    'Xe',
-    'Y',
-    'Yb',
-    'Z_33-34',
-    'Z_35-36',
-    'Z_37-38',
-    'Z_39-40',
-    'Z_41-42',
-    'Z_43-44',
-    'Z_45-46',
-    'Z_47-48',
-    'Z_49-50',
-    'Z_51-52',
-    'Z_53-54',
-    'Z_55-56',
-    'Z_57-58',
-    'Z_59-60',
-    'Z_62-69',
-    'Z_70-73',
-    'Z_74-80',
-    'Z_74-87',
-    'Z_81-87',
-    'Zgeq110',
-    'Zgeq2',
-    'Zgeq2-bar',
-    'Zgeq3',
-    'Zgeq3-bar',
-    'Zgeq55',
-    'Zgeq6',
-    'Zgeq6-bar',
-    'Zgeq65',
-    'Zgeq70',
-    'Zgeq88',
-    'Zgeq94',
-    'Zn',
-    'Zr',
-    'e+',
-    'e-',
-    'e-+e+',
-)
 
 ELEMENTS = {
     'H': 1,
@@ -479,7 +225,7 @@ def query(
     ----------
     quantity: str or sequence of str
         Element, isotope, particle, or mass group, or ratio of those, e.g. 'H', 'B/C'.
-        For valid names, see the constant crdb.VALID_NAMES. Multiple quantities can be
+        For valid names, see the crdb.valid_quantities(). Multiple quantities can be
         bundled in a sequence for convenience, but this is not more efficient than
         running multiple queries by hand.
     energy_type: str, optional
@@ -517,7 +263,7 @@ def query(
         Source of Solar modulation values; one of 'USO05', 'USO17', 'GHE17'. Default is
         'GHE17'.
     timeout: int, optional
-        Timeout for server response in seconds. Default is 60.
+        Timeout for server response in seconds. Default is 120.
     server_url: str, optional
         URL to send the request to. Default is http://lpsc.in2p3.fr/crdb). This is an
         expert option, users do not need to change this.
@@ -533,6 +279,9 @@ def query(
     ------
     ValueError
         An invalid parameter value triggers a ValueError.
+
+    ConnectionError
+        If no connection to the server can be established.
 
     TimeoutError
         If the server does not respond within the timeout time.
@@ -620,9 +369,6 @@ def _url(
     num = num.strip()
     den = rest[0].strip() if rest else ""
 
-    if num not in VALID_NAMES or (den and den not in VALID_NAMES):
-        raise ValueError(f"quantity {quantity} is not valid, see crdb.VALID_NAMES")
-
     # "+" must be escaped in URL, see
     # https://en.wikipedia.org/wiki/Percent-encoding
     num = num.replace("+", "%2B")
@@ -693,7 +439,7 @@ def _server_request(url: str, timeout: int) -> List[str]:
     # libs and instead show a simple traceback
     try:
         context = ssl._create_unverified_context()
-        response = rq.urlopen(url, context=context)
+        response = rq.urlopen(url, context=context, timeout=timeout)
         connection_error = False
     except Exception:
         import traceback
@@ -709,13 +455,14 @@ def _server_request(url: str, timeout: int) -> List[str]:
             "https://github.com/crdb-project/crdb/issues"
         )
 
-    blocksize = 1024**2
+    blocksize = 256**2
+    Mb = 1024**2
     nbytes = 0
     chunks = []
     while True:
         timeout_error = False
         try:
-            chunk = response.read(blocksize, timeout=timeout).decode("utf-8")
+            chunk = response.read(blocksize)
         except TimeoutError:
             timeout_error = True
         if timeout_error:
@@ -727,14 +474,14 @@ def _server_request(url: str, timeout: int) -> List[str]:
             break
         chunks.append(chunk)
         if chunks:  # show progress if there is more than one chunk
-            print(f"\r{nbytes / blocksize:.0f} Mb downloaded", end="", flush=True)
+            print(f"\r{nbytes / Mb:.2f} Mb downloaded", end="", flush=True)
     if len(chunks) > 1:
         print()
 
     if len(chunks) == 1 and (not chunks[0] or chunks[0].isspace()):
         raise ValueError("empty server response")
 
-    s = "".join(chunks)
+    s = b"".join(chunks).decode("utf-8")
     return s.split("\n")
 
 
@@ -895,12 +642,41 @@ def bibliography(table: np.recarray) -> Dict[str, str]:
 
 
 @cachier.cachier(stale_after=timedelta(days=30))
-def all() -> NDArray:
-    """Return the full raw CRDB database as a table."""
+def all(timeout: int = 120) -> NDArray:
+    """Return the full raw CRDB database as a table.
+
+    Parameters
+    ----------
+    timeout: int, optional
+        Timeout for server response in seconds. Default is 120.
+
+    Returns
+    -------
+    numpy record array with the database content
+
+    Energies are in GeV or GV. Solar modulation values are in MV. Distances are in
+    AU. Fluxes are in sr s m2 energy_unit.
+
+    Raises
+    ------
+    ConnectionError
+        If no connection to the server can be established.
+
+    TimeoutError
+        If the server does not respond within the timeout time.
+
+    Notes
+    -----
+    This function caches identical queries for 30 days. If you need to reset the cache,
+    do::
+
+        from crdb import clear_cache
+
+        clear_cache()
+    """
     url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv-asimport"
-    # url = "https://lpsc.in2p3.fr/crdb/_export_all_data.php?format=csv"
-    data = _server_request(url, timeout=100)
-    return _convert_csv(data, _CSV_FIELDS)
+    data = _server_request(url, timeout)
+    return _convert_csv(data, _CSV_ASIMPORT_FIELDS)
 
 
 def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
@@ -928,3 +704,20 @@ def solar_system_composition() -> Dict[str, List[Tuple[int, float]]]:
             abundance = float(m.group(3))
             result.setdefault(elem, []).append((a, abundance))
     return result
+
+
+def valid_quantities() -> Set[str]:
+    """
+    Return array with valid quantities that can be queried with crdb.query().
+
+    Also ratios of these quantities can be queried. Calling this may be slow,
+    since it downloads the full CRDB database to find all quantities.
+    """
+    tab = all()
+    valid = set()
+    for q in np.unique(tab.quantity):
+        num, *rest = q.split("/")
+        valid.add(num)
+        if rest:
+            valid.add(rest[0])
+    return valid

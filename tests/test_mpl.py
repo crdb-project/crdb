@@ -45,3 +45,13 @@ def test_draw_timeseries(table):
 
     # no warning now
     mpl.draw_timeseries(tab)
+
+
+def test_draw_timeseries_2(table):
+    mask = []
+    for dt in table.datetime:
+        mask.append(";" not in dt)
+    mask = np.array(mask)
+    tab = table[mask]
+
+    mpl.draw_timeseries(tab, show_bin=True)

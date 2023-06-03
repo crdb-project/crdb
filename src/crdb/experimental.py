@@ -9,8 +9,7 @@ from typing import Dict, Tuple, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from crdb import ELEMENTS
-from crdb import VALID_NAMES
+from crdb import ELEMENTS, valid_quantities
 from crdb import solar_system_composition
 
 NUCLEON_MASS = 0.9389187543299999  # GeV
@@ -37,7 +36,7 @@ def energy_conversion_numbers() -> Dict[str, Tuple[int, float]]:
             a_mean = np.nan
         result[key] = (z, a_mean)
 
-    for key in VALID_NAMES:
+    for key in valid_quantities():
         if key.endswith("-bar") and key[:-4] in result:
             result[key] = result[key[:-4]]
 

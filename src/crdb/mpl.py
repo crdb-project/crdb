@@ -222,7 +222,7 @@ def _draw_with_errorbars(
         if xerr is None:
             xerrm = None
         else:
-            xerrm = xerr[:, mask]
+            xerrm = xerr[mask]
         if mask is is_ul:
             ystam = 0.2 * ym
         lines = plt.errorbar(

@@ -121,7 +121,6 @@ ELEMENTS = {
 }
 
 COMBINE = (
-    "AESOP",
     "AMS01",
     "ATIC",
     "BESS",

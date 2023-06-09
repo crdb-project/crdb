@@ -118,8 +118,7 @@ def draw_timeseries(
     y = table.value * factor
     ysta = np.transpose(table.err_sta) * factor
     ysys = np.transpose(table.err_sys) * factor
-    # taking abs here should not be necessary, but David reported issues
-    xerr = np.abs(np.transpose(xerr))  # type:ignore
+    xerr = np.transpose(xerr)  # type:ignore
     is_ul = table.is_upper_limit
     kwargs["marker"] = "."
     return _draw_with_errorbars(
@@ -218,6 +217,11 @@ def _draw_with_errorbars(
             del kwargs["ls"]
     if "fmt" in kwargs:
         raise ValueError("keyword 'fmt' is not allowed, use 'marker' instead")
+    # taking abs here should not be necessary, but David reported issues
+    ysta = np.abs(ysta)
+    ysys = np.abs(ysys)
+    if xerr is not None:
+        xerr = np.abs(xerr)
     is_pt = ~is_ul
     lines = None
     for mask in (is_pt, is_ul):

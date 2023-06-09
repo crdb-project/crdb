@@ -118,7 +118,8 @@ def draw_timeseries(
     y = table.value * factor
     ysta = np.transpose(table.err_sta) * factor
     ysys = np.transpose(table.err_sys) * factor
-    xerr = np.transpose(xerr)  # type:ignore
+    # taking abs here should not be necessary, but David reported issues
+    xerr = np.abs(np.transpose(xerr))  # type:ignore
     is_ul = table.is_upper_limit
     kwargs["marker"] = "."
     return _draw_with_errorbars(

@@ -1,4 +1,5 @@
 """Compute valid names."""
+
 import crdb
 import numpy as np
 

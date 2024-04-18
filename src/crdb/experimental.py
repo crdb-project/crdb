@@ -4,6 +4,7 @@ Experimental utilitites for the crdb Python package.
 The functions in this module are not stable and their API can
 change at any time. Use with caution.
 """
+
 from typing import Dict, Tuple, Union
 
 import numpy as np

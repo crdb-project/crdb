@@ -65,7 +65,7 @@ def main(args: Optional[List[str]] = None) -> None:
     try:
         url = _url(**kwargs)
     except ValueError as e:
-        sys.stderr.write("".join(traceback.format_exception_only(e)))  # type:ignore
+        sys.stderr.write("".join(traceback.format_exception_only(e)))  # type: ignore
         sys.exit(1)
     data = _server_request(url, timeout=args.timeout)
     print("\n".join(data))

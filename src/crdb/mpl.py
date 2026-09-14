@@ -102,8 +102,8 @@ def draw_timeseries(
                     x1 = cx - dx
                 if x2 is None or cx + dx > x2:
                     x2 = cx + dx
-            dx = (x2 - x1) / 2  # type:ignore
-            cx = x1 + 0.5 * dx  # type:ignore
+            dx = (x2 - x1) / 2  # type: ignore
+            cx = x1 + 0.5 * dx  # type: ignore
         else:
             cx, dx = get_mean_datetime(dt)
         x.append(cx)
@@ -118,7 +118,7 @@ def draw_timeseries(
     y = table.value * factor
     ysta = np.transpose(table.err_sta) * factor
     ysys = np.transpose(table.err_sys) * factor
-    xerr = np.transpose(xerr)  # type:ignore
+    xerr = np.transpose(xerr)  # type: ignore
     is_ul = table.is_upper_limit
     kwargs["marker"] = "."
     return _draw_with_errorbars(

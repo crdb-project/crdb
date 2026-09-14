@@ -112,7 +112,7 @@ def _convert_energy(
     tab: np.recarray, mask: Union[int, NDArray], f: Union[float, NDArray]
 ) -> None:
     if np.ndim(f) > 0:
-        f.shape = (len(f), 1)  # type:ignore
+        f.shape = (len(f), 1)  # type: ignore
     tab[mask].e *= f
     tab[mask].e_bin *= f
     tab[mask].value /= f

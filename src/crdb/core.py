@@ -315,7 +315,7 @@ def query(
             )
             for q in quantity
         ]
-        return np.concatenate(results).view(np.recarray)  # type:ignore
+        return np.concatenate(results).view(np.recarray)  # type: ignore
 
     url = _url(
         quantity=quantity,
@@ -495,7 +495,7 @@ def _convert_csv(
         if f is None:
             mapping.append(None)
         elif len(f) == 3:
-            (n,) = f[2]  # type:ignore
+            (n,) = f[2]  # type: ignore
             for k in range(n):
                 mapping.append((f[0], k))
         else:
